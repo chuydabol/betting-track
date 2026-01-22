@@ -173,6 +173,18 @@
     .neg{ color: var(--bad); }
     .neu{ color: var(--warn); }
     .bankline{ margin-top: 10px; color: var(--muted); font-size: 12px; }
+    .chart-wrap{
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+    }
+    #bankrollChart{
+      width: 100%;
+      height: 180px;
+      display: block;
+    }
 
     /* Table wrapper: prevents page overflow */
     .tablewrap{
@@ -409,6 +421,23 @@
             <label>App (optional)</label>
             <input id="app" type="text" placeholder="PrizePicks / Underdog..." />
           </div>
+          <div class="col-3">
+            <label>Sportsbook (optional)</label>
+            <input id="sportsbook" type="text" placeholder="FanDuel / DraftKings..." />
+          </div>
+          <div class="col-3">
+            <label>League (optional)</label>
+            <input id="league" type="text" placeholder="NBA / NFL / NHL..." />
+          </div>
+          <div class="col-3">
+            <label>Odds Type (optional)</label>
+            <select id="oddsType">
+              <option value="">Select</option>
+              <option value="standard">Standard</option>
+              <option value="boost">Boost</option>
+              <option value="promo">Promo</option>
+            </select>
+          </div>
 
           <div class="col-3">
             <label>Stake ($)</label>
@@ -425,6 +454,10 @@
           <div class="col-3">
             <label>Tag (optional)</label>
             <input id="tag" type="text" placeholder="nba / nhl / etc" />
+          </div>
+          <div class="col-3">
+            <label>Group / Session</label>
+            <input id="group" type="text" placeholder="Weekend slate / Week 1" />
           </div>
 
           <div class="col-6">
@@ -471,12 +504,16 @@
                   <th style="width: 96px;">Date</th>
                   <th style="width: 110px;">Status</th>
                   <th style="width: 120px;">App</th>
+                  <th style="width: 120px;">Sportsbook</th>
+                  <th style="width: 90px;">League</th>
+                  <th style="width: 90px;">Odds</th>
                   <th class="right" style="width: 92px;">Stake</th>
                   <th class="right" style="width: 72px;">x</th>
                   <th class="right" style="width: 92px;">Paid x</th>
                   <th class="right" style="width: 100px;">Payout</th>
                   <th class="right" style="width: 90px;">P/L</th>
                   <th style="width: 90px;">Tag</th>
+                  <th style="width: 120px;">Group</th>
                   <th style="width: 110px;">Slip ID</th>
                   <th>Notes</th>
                   <th class="right" style="width: 70px;">⋯</th>
@@ -511,6 +548,9 @@
 
           <div class="kpis" id="kpis"></div>
           <div class="bankline" id="bankrollLine"></div>
+          <div class="chart-wrap">
+            <canvas id="bankrollChart" width="640" height="200"></canvas>
+          </div>
         </div>
 
         <div class="card">
@@ -543,8 +583,14 @@
               </select>
             </div>
             <div class="col-6">
-              <label>Search (notes/app/tag/id)</label>
+              <label>Search (notes/app/sportsbook/league/tag/group/id)</label>
               <input id="search" type="text" placeholder="type to filter..." />
+            </div>
+            <div class="col-6">
+              <label>Group / Session</label>
+              <select id="filterGroup">
+                <option value="ALL">All groups</option>
+              </select>
             </div>
             <div class="col-12">
               <label>Auto-save</label>
@@ -678,22 +724,36 @@
     select.value = dates.includes(current) ? current : "ALL";
   }
 
+  function refreshGroupDropdown(){
+    const select = $("filterGroup");
+    const current = select.value;
+    const groups = Array.from(new Set(state.slips.map(s => s.group).filter(Boolean))).sort();
+    select.innerHTML = `<option value="ALL">All groups</option>` + groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join("");
+    select.value = groups.includes(current) ? current : "ALL";
+  }
+
   function applyFilters(list){
     const status = $("filterStatus").value;
     const query = $("search").value.trim().toLowerCase();
     const dateFilter = $("filterDate").value;
+    const groupFilter = $("filterGroup").value;
 
     let out = list.slice();
 
     if(status === "PENDING") out = out.filter(s => s.status === "PENDING");
     if(status === "DONE") out = out.filter(s => s.status === "DONE");
     if(dateFilter !== "ALL") out = out.filter(s => s.date === dateFilter);
+    if(groupFilter !== "ALL") out = out.filter(s => (s.group || "") === groupFilter);
 
     if(query){
       out = out.filter(s =>
         (s.app||"").toLowerCase().includes(query) ||
+        (s.sportsbook||"").toLowerCase().includes(query) ||
+        (s.league||"").toLowerCase().includes(query) ||
+        (s.oddsType||"").toLowerCase().includes(query) ||
         (s.notes||"").toLowerCase().includes(query) ||
         (s.tag||"").toLowerCase().includes(query) ||
+        (s.group||"").toLowerCase().includes(query) ||
         (s.slipId||"").toLowerCase().includes(query)
       );
     }
@@ -725,6 +785,7 @@
 
   function render(){
     refreshDateDropdown();
+    refreshGroupDropdown();
     setBodyView();
 
     $("bankroll").value = String(state.startingBankroll || "");
@@ -754,12 +815,16 @@
         <td class="mono">${escapeHtml(s.date||"")}</td>
         <td>${statusPill(s)}</td>
         <td>${escapeHtml(s.app||"")}</td>
+        <td>${escapeHtml(s.sportsbook||"")}</td>
+        <td>${escapeHtml(s.league||"")}</td>
+        <td>${escapeHtml(s.oddsType||"")}</td>
         <td class="right mono">${fmtMoney(s.stake)}</td>
         <td class="right mono">${num(s.mult).toFixed(2)}x</td>
         <td class="right">${paidCell}</td>
         <td class="right mono">${payoutCell}</td>
         <td class="right">${plCell}</td>
         <td>${escapeHtml(s.tag||"")}</td>
+        <td>${escapeHtml(s.group||"")}</td>
         <td class="mono">${escapeHtml(s.slipId||"")}</td>
         <td class="notes-trunc" title="${escapeHtml(s.notes||"")}">${escapeHtml(notesOneLine)}</td>
         <td class="right">
@@ -790,7 +855,11 @@
               <span class="mono">${escapeHtml(s.date||"")}</span>
               ${statusPill(s)}
               ${s.app ? `<span>• ${escapeHtml(s.app)}</span>` : ""}
+              ${s.sportsbook ? `<span>• ${escapeHtml(s.sportsbook)}</span>` : ""}
+              ${s.league ? `<span>• ${escapeHtml(s.league)}</span>` : ""}
+              ${s.oddsType ? `<span>• ${escapeHtml(s.oddsType)}</span>` : ""}
               ${s.tag ? `<span>• ${escapeHtml(s.tag)}</span>` : ""}
+              ${s.group ? `<span>• ${escapeHtml(s.group)}</span>` : ""}
             </div>
           </div>
           <button class="kebab" title="Actions" data-kebab="${s.id}">⋯</button>
@@ -803,6 +872,7 @@
           <div class="kv"><div class="k">Payout</div><div class="v mono">${payoutText}</div></div>
           <div class="kv"><div class="k">Profit/Loss</div><div class="v mono ${plCls}">${plText}</div></div>
           <div class="kv"><div class="k">Slip ID</div><div class="v mono">${escapeHtml(s.slipId||"—")}</div></div>
+          <div class="kv"><div class="k">Group</div><div class="v mono">${escapeHtml(s.group||"—")}</div></div>
         </div>
 
         ${s.notes ? `<div class="notes">${escapeHtml(s.notes)}</div>` : ""}
@@ -823,6 +893,11 @@
     const allPaid = done.reduce((a,s)=>a + (payoutFor(s) ?? 0),0);
     const allNet = allPaid - allStaked;
     const allRoi = allStaked > 0 ? allNet/allStaked : 0;
+    const doneCount = done.length;
+    const wins = done.filter(s => s.result === "W").length;
+    const winRate = doneCount > 0 ? wins / doneCount : 0;
+    const avgStake = doneCount > 0 ? allStaked / doneCount : 0;
+    const avgMult = doneCount > 0 ? done.reduce((a,s)=>a+num(s.mult),0) / doneCount : 0;
 
     const pendingCount = state.slips.filter(s=>s.status==="PENDING").length;
     const endBankroll = num(state.startingBankroll) + allNet;
@@ -832,10 +907,76 @@
     kpis.appendChild(kpiCard(`Selected Day Net (${view})`, moneySpan(dayNet)));
     kpis.appendChild(kpiCard(`Selected Day ROI`, `<span class="mono">${fmtPct(dayRoi)}</span>`));
     kpis.appendChild(kpiCard(`All-Time Net`, moneySpan(allNet)));
+    kpis.appendChild(kpiCard(`All-Time ROI`, `<span class="mono">${fmtPct(allRoi)}</span>`));
+    kpis.appendChild(kpiCard(`Win Rate`, `<span class="mono">${fmtPct(winRate)}</span>`));
+    kpis.appendChild(kpiCard(`Avg Stake`, `<span class="mono">${fmtMoney(avgStake)}</span>`));
+    kpis.appendChild(kpiCard(`Avg Multiplier`, `<span class="mono">${avgMult.toFixed(2)}x</span>`));
     kpis.appendChild(kpiCard(`Pending Slips`, `<span class="mono">${pendingCount}</span>`));
 
     $("bankrollLine").innerHTML =
       `Starting bankroll: <b class="mono">${fmtMoney(state.startingBankroll)}</b> → Current (finished slips): <b class="mono">${fmtMoney(endBankroll)}</b>`;
+
+    renderBankrollChart(done, endBankroll);
+  }
+
+  function renderBankrollChart(done, endBankroll){
+    const canvas = $("bankrollChart");
+    if(!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.clearRect(0,0,width,height);
+
+    if(done.length === 0){
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.font = "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+      ctx.fillText("No finished slips yet.", 12, 20);
+      return;
+    }
+
+    const sorted = done.slice().sort((a,b) => {
+      const dateSort = (a.date||"").localeCompare(b.date||"");
+      if(dateSort !== 0) return dateSort;
+      return (a.createdAt||0) - (b.createdAt||0);
+    });
+
+    const points = [];
+    let bank = num(state.startingBankroll);
+    points.push(bank);
+    for(const s of sorted){
+      bank += plFor(s) ?? 0;
+      points.push(bank);
+    }
+
+    const minVal = Math.min(...points);
+    const maxVal = Math.max(...points);
+    const range = Math.max(1, maxVal - minVal);
+    const padding = 16;
+
+    const xStep = (width - padding * 2) / Math.max(1, points.length - 1);
+    const yFor = (val) => height - padding - ((val - minVal) / range) * (height - padding * 2);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.2)";
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.lineTo(width - padding, height - padding);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(110,168,255,0.85)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    points.forEach((val, i) => {
+      const x = padding + i * xStep;
+      const y = yFor(val);
+      if(i === 0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(255,255,255,0.65)";
+    ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\",\"Courier New\", monospace";
+    ctx.fillText(`End: ${fmtMoney(endBankroll)}`, padding, height - 6);
   }
 
   function readSlipFromForm(forcePending=false){
@@ -843,11 +984,15 @@
     const status = forcePending ? "PENDING" : $("status").value;
     const result = $("result").value;
     const app = $("app").value.trim();
+    const sportsbook = $("sportsbook").value.trim();
+    const league = $("league").value.trim();
+    const oddsType = $("oddsType").value;
     const stake = num($("stake").value);
     const mult = num($("mult").value);
     const paidRaw = $("paid").value;
     const paidMult = (paidRaw === "" ? "" : num(paidRaw));
     const tag = $("tag").value.trim();
+    const group = $("group").value.trim();
     const slipId = $("slipId").value.trim();
     const notes = $("notes").value.trim();
 
@@ -859,14 +1004,21 @@
       createdAt: Date.now(),
       date, status,
       result: status==="DONE" ? result : "",
-      app, stake, mult, paidMult, tag, slipId, notes
+      app, sportsbook, league, oddsType,
+      stake, mult, paidMult, tag, group, slipId, notes
     };
   }
 
   function clearForm(){
+    $("app").value = "";
+    $("sportsbook").value = "";
+    $("league").value = "";
+    $("oddsType").value = "";
     $("stake").value = "";
     $("mult").value = "";
     $("paid").value = "";
+    $("tag").value = "";
+    $("group").value = "";
     $("notes").value = "";
     $("slipId").value = "";
   }
@@ -893,17 +1045,17 @@
   }
 
   function exportCsv(){
-    const cols = ["date","status","result","app","stake","mult","paidMult","payout","profitLoss","tag","slipId","notes"];
+    const cols = ["date","status","result","app","sportsbook","league","oddsType","stake","mult","paidMult","payout","profitLoss","tag","group","slipId","notes"];
     const lines = [cols.join(",")];
     for(const s of state.slips){
       const p = payoutFor(s);
       const pl = plFor(s);
       const row = [
-        s.date, s.status, s.result, s.app,
+        s.date, s.status, s.result, s.app, s.sportsbook, s.league, s.oddsType,
         s.stake, s.mult, (s.paidMult===""? "" : s.paidMult),
         (p===null? "" : p),
         (pl===null? "" : pl),
-        s.tag, s.slipId,
+        s.tag, s.group, s.slipId,
         (s.notes||"").replaceAll("\n"," ")
       ].map(v => {
         const str = String(v ?? "");
@@ -933,10 +1085,14 @@
         status: s.status === "DONE" ? "DONE" : "PENDING",
         result: s.result || "",
         app: s.app || "",
+        sportsbook: s.sportsbook || "",
+        league: s.league || "",
+        oddsType: s.oddsType || "",
         stake: num(s.stake),
         mult: num(s.mult),
         paidMult: (s.paidMult === undefined ? "" : s.paidMult),
         tag: s.tag || "",
+        group: s.group || "",
         slipId: s.slipId || "",
         notes: s.notes || ""
       }));
@@ -1061,6 +1217,7 @@
   $("viewDate").addEventListener("change", render);
   $("filterStatus").addEventListener("change", render);
   $("filterDate").addEventListener("change", render);
+  $("filterGroup").addEventListener("change", render);
   $("sortBy").addEventListener("change", render);
   $("search").addEventListener("input", render);
 
