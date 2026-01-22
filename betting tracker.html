@@ -466,15 +466,7 @@
           </div>
           <div class="col-3">
             <label for="app">App (optional)</label>
-            <input id="app" type="text" placeholder="PrizePicks / Underdog..." autocomplete="organization" list="appList" />
-          </div>
-          <div class="col-3">
-            <label for="sportsbook">Sportsbook (optional)</label>
-            <input id="sportsbook" type="text" placeholder="FanDuel / DraftKings..." autocomplete="organization" list="sportsbookList" />
-          </div>
-          <div class="col-3">
-            <label for="league">League (optional)</label>
-            <input id="league" type="text" placeholder="NBA / NFL / NHL..." list="leagueList" />
+
           </div>
           <div class="col-3">
             <label for="oddsType">Odds Type (optional)</label>
@@ -501,35 +493,12 @@
           <div class="col-3">
             <label for="stake">Stake ($)</label>
             <input id="stake" type="number" step="0.01" placeholder="50" min="0.01" inputmode="decimal" />
-          </div>
-          <div class="col-3">
-            <label for="mult">Listed Multiplier (x)</label>
-            <input id="mult" type="number" step="0.01" placeholder="2.0" min="0.01" inputmode="decimal" />
-          </div>
-          <div class="col-3">
-            <label for="paid">Paid Multiplier (optional)</label>
-            <input id="paid" type="number" step="0.01" placeholder="flex partials" min="0" inputmode="decimal" />
-          </div>
-          <div class="col-3">
-            <label for="tag">Tag (optional)</label>
-            <input id="tag" type="text" placeholder="nba / nhl / etc" list="tagList" />
-          </div>
-          <div class="col-3">
-            <label for="group">Group / Session</label>
-            <input id="group" type="text" placeholder="Weekend slate / Week 1" list="groupList" />
+
           </div>
 
           <div class="col-6">
             <label for="slipId">Slip ID (optional)</label>
-            <input id="slipId" type="text" placeholder="ticket # / reference" autocomplete="off" list="slipIdList" />
-          </div>
-          <div class="col-12">
-            <div class="section-title" style="margin-bottom: 6px;">
-              <h2>Players / Props</h2>
-              <button class="btn ghost" id="addPlayerBtn" type="button">Add Player</button>
-            </div>
-            <div class="row" id="players"></div>
-            <div class="muteline">Add each player, prop line, and the over/under pick.</div>
+
           </div>
 
           <div class="col-12" style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -569,7 +538,7 @@
         <div class="tablewrap">
           <div class="table-scroll">
             <table>
-              <caption>Slip log showing status, payouts, and players for each entry.</caption>
+
               <thead>
                 <tr>
                   <th scope="col" style="width: 96px;">Date</th>
@@ -578,7 +547,7 @@
                   <th scope="col" style="width: 120px;">Sportsbook</th>
                   <th scope="col" style="width: 90px;">League</th>
                   <th scope="col" style="width: 90px;">Odds</th>
-                  <th scope="col" style="width: 120px;">Made By</th>
+
                   <th scope="col" class="right" style="width: 92px;">Stake</th>
                   <th scope="col" class="right" style="width: 72px;">x</th>
                   <th scope="col" class="right" style="width: 92px;">Paid x</th>
@@ -587,7 +556,7 @@
                   <th scope="col" style="width: 90px;">Tag</th>
                   <th scope="col" style="width: 120px;">Group</th>
                   <th scope="col" style="width: 110px;">Slip ID</th>
-                  <th scope="col">Players</th>
+
                   <th scope="col" class="right" style="width: 70px;">⋯</th>
                 </tr>
               </thead>
@@ -655,7 +624,7 @@
               </select>
             </div>
             <div class="col-6">
-              <label for="search">Search (players/app/sportsbook/league/tag/group/id)</label>
+
               <input id="search" type="text" placeholder="type to filter..." />
             </div>
             <div class="col-6">
@@ -866,8 +835,7 @@
       leagueList: ["NBA", "NFL", "NHL", "MLB", "NCAAF", "NCAAB", "Soccer", "WNBA", "MMA", "Tennis"],
       tagList: ["nba", "nfl", "nhl", "mlb", "props", "parlay", "live"],
       groupList: [],
-      slipIdList: [],
-      creatorList: ["CHUY", "ENVIXITY", "JAY", "OCHAN", "FLUID", "POPS", "MIX"]
+
     };
 
     const fromSlips = (key) => state.slips.map(s => s[key]).filter(Boolean);
@@ -879,8 +847,7 @@
       leagueList: merge(presets.leagueList, fromSlips("league")),
       tagList: merge(presets.tagList, fromSlips("tag")),
       groupList: merge(presets.groupList, fromSlips("group")),
-      slipIdList: merge(presets.slipIdList, fromSlips("slipId")),
-      creatorList: merge(presets.creatorList, fromSlips("creator"))
+
     };
 
     Object.entries(lists).forEach(([id, values]) => {
