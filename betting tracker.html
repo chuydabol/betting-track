@@ -173,6 +173,18 @@
     .neg{ color: var(--bad); }
     .neu{ color: var(--warn); }
     .bankline{ margin-top: 10px; color: var(--muted); font-size: 12px; }
+    .chart-wrap{
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+    }
+    #bankrollChart{
+      width: 100%;
+      height: 180px;
+      display: block;
+    }
 
     /* Table wrapper: prevents page overflow */
     .tablewrap{
@@ -252,6 +264,29 @@
     .kebab:hover{ background: rgba(255,255,255,0.10); }
 
     .muteline{ color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+    .props-wrap{ display:grid; gap: 8px; }
+    .props-row{
+      display:grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr auto;
+      gap: 8px;
+      align-items:center;
+    }
+    .props-row .btn{
+      min-height: 38px;
+      padding: 8px 10px;
+    }
+    .props-row input, .props-row select{
+      min-height: 38px;
+    }
+    @media (max-width: 980px){
+      .props-row{
+        grid-template-columns: 1fr 1fr;
+      }
+      .props-row .btn{
+        grid-column: span 2;
+      }
+    }
 
     /* Log view toggles */
     .log-views{ display:flex; gap: 8px; align-items:center; flex-wrap:wrap; }
@@ -409,6 +444,23 @@
             <label>App (optional)</label>
             <input id="app" type="text" placeholder="PrizePicks / Underdog..." />
           </div>
+          <div class="col-3">
+            <label>Sportsbook (optional)</label>
+            <input id="sportsbook" type="text" placeholder="FanDuel / DraftKings..." />
+          </div>
+          <div class="col-3">
+            <label>League (optional)</label>
+            <input id="league" type="text" placeholder="NBA / NFL / NHL..." />
+          </div>
+          <div class="col-3">
+            <label>Odds Type (optional)</label>
+            <select id="oddsType">
+              <option value="">Select</option>
+              <option value="standard">Standard</option>
+              <option value="boost">Boost</option>
+              <option value="promo">Promo</option>
+            </select>
+          </div>
 
           <div class="col-3">
             <label>Stake ($)</label>
@@ -426,14 +478,24 @@
             <label>Tag (optional)</label>
             <input id="tag" type="text" placeholder="nba / nhl / etc" />
           </div>
+          <div class="col-3">
+            <label>Group / Session</label>
+            <input id="group" type="text" placeholder="Weekend slate / Week 1" />
+          </div>
 
           <div class="col-6">
             <label>Slip ID (optional)</label>
             <input id="slipId" type="text" placeholder="ticket # / reference" />
           </div>
           <div class="col-6">
-            <label>Notes (players/props)</label>
-            <textarea id="notes" placeholder="Westbrook O 15.5 pts&#10;DeRozan O 3.5 ast"></textarea>
+            <label>Player Props</label>
+            <div class="props-wrap" id="propsWrap"></div>
+            <button class="btn ghost" id="addPropRow" type="button">Add Player Prop</button>
+            <div class="muteline">Example: Player + line + O/U + stat. Add multiple rows.</div>
+          </div>
+          <div class="col-12">
+            <label>Additional Notes (optional)</label>
+            <textarea id="notes" placeholder="Any extra context..."></textarea>
           </div>
 
           <div class="col-12" style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -471,12 +533,16 @@
                   <th style="width: 96px;">Date</th>
                   <th style="width: 110px;">Status</th>
                   <th style="width: 120px;">App</th>
+                  <th style="width: 120px;">Sportsbook</th>
+                  <th style="width: 90px;">League</th>
+                  <th style="width: 90px;">Odds</th>
                   <th class="right" style="width: 92px;">Stake</th>
                   <th class="right" style="width: 72px;">x</th>
                   <th class="right" style="width: 92px;">Paid x</th>
                   <th class="right" style="width: 100px;">Payout</th>
                   <th class="right" style="width: 90px;">P/L</th>
                   <th style="width: 90px;">Tag</th>
+                  <th style="width: 120px;">Group</th>
                   <th style="width: 110px;">Slip ID</th>
                   <th>Notes</th>
                   <th class="right" style="width: 70px;">⋯</th>
@@ -511,6 +577,9 @@
 
           <div class="kpis" id="kpis"></div>
           <div class="bankline" id="bankrollLine"></div>
+          <div class="chart-wrap">
+            <canvas id="bankrollChart" width="640" height="200"></canvas>
+          </div>
         </div>
 
         <div class="card">
@@ -543,8 +612,14 @@
               </select>
             </div>
             <div class="col-6">
-              <label>Search (notes/app/tag/id)</label>
+              <label>Search (notes/app/sportsbook/league/tag/group/id)</label>
               <input id="search" type="text" placeholder="type to filter..." />
+            </div>
+            <div class="col-6">
+              <label>Group / Session</label>
+              <select id="filterGroup">
+                <option value="ALL">All groups</option>
+              </select>
             </div>
             <div class="col-12">
               <label>Auto-save</label>
@@ -617,6 +692,16 @@
 
   const fmtMoney = (n) => num(n).toLocaleString(undefined, {style:"currency", currency:"USD"});
   const fmtPct = (n) => (Number.isFinite(n) ? (n*100).toFixed(1)+"%" : "0.0%");
+  const statLabel = (v) => {
+    if(v === "pts") return "PTS";
+    if(v === "reb") return "REB";
+    if(v === "ast") return "AST";
+    if(v === "pra") return "PRA";
+    if(v === "3pm") return "3PM";
+    if(v === "blk") return "BLK";
+    if(v === "stl") return "STL";
+    return v ? v.toUpperCase() : "";
+  };
 
   const escapeHtml = (s) => String(s||"")
     .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
@@ -678,22 +763,37 @@
     select.value = dates.includes(current) ? current : "ALL";
   }
 
+  function refreshGroupDropdown(){
+    const select = $("filterGroup");
+    const current = select.value;
+    const groups = Array.from(new Set(state.slips.map(s => s.group).filter(Boolean))).sort();
+    select.innerHTML = `<option value="ALL">All groups</option>` + groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join("");
+    select.value = groups.includes(current) ? current : "ALL";
+  }
+
   function applyFilters(list){
     const status = $("filterStatus").value;
     const query = $("search").value.trim().toLowerCase();
     const dateFilter = $("filterDate").value;
+    const groupFilter = $("filterGroup").value;
 
     let out = list.slice();
 
     if(status === "PENDING") out = out.filter(s => s.status === "PENDING");
     if(status === "DONE") out = out.filter(s => s.status === "DONE");
     if(dateFilter !== "ALL") out = out.filter(s => s.date === dateFilter);
+    if(groupFilter !== "ALL") out = out.filter(s => (s.group || "") === groupFilter);
 
     if(query){
       out = out.filter(s =>
         (s.app||"").toLowerCase().includes(query) ||
+        (s.sportsbook||"").toLowerCase().includes(query) ||
+        (s.league||"").toLowerCase().includes(query) ||
+        (s.oddsType||"").toLowerCase().includes(query) ||
+        (formatPropsLine(s.props)||"").toLowerCase().includes(query) ||
         (s.notes||"").toLowerCase().includes(query) ||
         (s.tag||"").toLowerCase().includes(query) ||
+        (s.group||"").toLowerCase().includes(query) ||
         (s.slipId||"").toLowerCase().includes(query)
       );
     }
@@ -725,6 +825,7 @@
 
   function render(){
     refreshDateDropdown();
+    refreshGroupDropdown();
     setBodyView();
 
     $("bankroll").value = String(state.startingBankroll || "");
@@ -748,18 +849,23 @@
         ? `<span style="color:rgba(255,255,255,.45)">—</span>`
         : `<span class="mono">${num(s.paidMult).toFixed(2)}x</span>`;
 
-      const notesOneLine = (s.notes || "").replaceAll("\n"," • ");
+      const propsLine = formatPropsLine(s.props);
+      const notesOneLine = [propsLine, (s.notes || "").replaceAll("\n"," • ")].filter(Boolean).join(" • ");
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td class="mono">${escapeHtml(s.date||"")}</td>
         <td>${statusPill(s)}</td>
         <td>${escapeHtml(s.app||"")}</td>
+        <td>${escapeHtml(s.sportsbook||"")}</td>
+        <td>${escapeHtml(s.league||"")}</td>
+        <td>${escapeHtml(s.oddsType||"")}</td>
         <td class="right mono">${fmtMoney(s.stake)}</td>
         <td class="right mono">${num(s.mult).toFixed(2)}x</td>
         <td class="right">${paidCell}</td>
         <td class="right mono">${payoutCell}</td>
         <td class="right">${plCell}</td>
         <td>${escapeHtml(s.tag||"")}</td>
+        <td>${escapeHtml(s.group||"")}</td>
         <td class="mono">${escapeHtml(s.slipId||"")}</td>
         <td class="notes-trunc" title="${escapeHtml(s.notes||"")}">${escapeHtml(notesOneLine)}</td>
         <td class="right">
@@ -780,6 +886,7 @@
       const plCls = (pl === null) ? "neu" : (pl>0 ? "pos" : pl<0 ? "neg" : "neu");
 
       const paidText = (s.paidMult === "" || s.paidMult === null || s.paidMult === undefined) ? "—" : `${num(s.paidMult).toFixed(2)}x`;
+      const propsHtml = formatPropsHtml(s.props);
 
       const el = document.createElement("div");
       el.className = "slipCard";
@@ -790,7 +897,11 @@
               <span class="mono">${escapeHtml(s.date||"")}</span>
               ${statusPill(s)}
               ${s.app ? `<span>• ${escapeHtml(s.app)}</span>` : ""}
+              ${s.sportsbook ? `<span>• ${escapeHtml(s.sportsbook)}</span>` : ""}
+              ${s.league ? `<span>• ${escapeHtml(s.league)}</span>` : ""}
+              ${s.oddsType ? `<span>• ${escapeHtml(s.oddsType)}</span>` : ""}
               ${s.tag ? `<span>• ${escapeHtml(s.tag)}</span>` : ""}
+              ${s.group ? `<span>• ${escapeHtml(s.group)}</span>` : ""}
             </div>
           </div>
           <button class="kebab" title="Actions" data-kebab="${s.id}">⋯</button>
@@ -803,8 +914,10 @@
           <div class="kv"><div class="k">Payout</div><div class="v mono">${payoutText}</div></div>
           <div class="kv"><div class="k">Profit/Loss</div><div class="v mono ${plCls}">${plText}</div></div>
           <div class="kv"><div class="k">Slip ID</div><div class="v mono">${escapeHtml(s.slipId||"—")}</div></div>
+          <div class="kv"><div class="k">Group</div><div class="v mono">${escapeHtml(s.group||"—")}</div></div>
         </div>
 
+        ${propsHtml ? `<div class="notes">${propsHtml}</div>` : ""}
         ${s.notes ? `<div class="notes">${escapeHtml(s.notes)}</div>` : ""}
       `;
       cards.appendChild(el);
@@ -823,6 +936,11 @@
     const allPaid = done.reduce((a,s)=>a + (payoutFor(s) ?? 0),0);
     const allNet = allPaid - allStaked;
     const allRoi = allStaked > 0 ? allNet/allStaked : 0;
+    const doneCount = done.length;
+    const wins = done.filter(s => s.result === "W").length;
+    const winRate = doneCount > 0 ? wins / doneCount : 0;
+    const avgStake = doneCount > 0 ? allStaked / doneCount : 0;
+    const avgMult = doneCount > 0 ? done.reduce((a,s)=>a+num(s.mult),0) / doneCount : 0;
 
     const pendingCount = state.slips.filter(s=>s.status==="PENDING").length;
     const endBankroll = num(state.startingBankroll) + allNet;
@@ -832,10 +950,145 @@
     kpis.appendChild(kpiCard(`Selected Day Net (${view})`, moneySpan(dayNet)));
     kpis.appendChild(kpiCard(`Selected Day ROI`, `<span class="mono">${fmtPct(dayRoi)}</span>`));
     kpis.appendChild(kpiCard(`All-Time Net`, moneySpan(allNet)));
+    kpis.appendChild(kpiCard(`All-Time ROI`, `<span class="mono">${fmtPct(allRoi)}</span>`));
+    kpis.appendChild(kpiCard(`Win Rate`, `<span class="mono">${fmtPct(winRate)}</span>`));
+    kpis.appendChild(kpiCard(`Avg Stake`, `<span class="mono">${fmtMoney(avgStake)}</span>`));
+    kpis.appendChild(kpiCard(`Avg Multiplier`, `<span class="mono">${avgMult.toFixed(2)}x</span>`));
     kpis.appendChild(kpiCard(`Pending Slips`, `<span class="mono">${pendingCount}</span>`));
 
     $("bankrollLine").innerHTML =
       `Starting bankroll: <b class="mono">${fmtMoney(state.startingBankroll)}</b> → Current (finished slips): <b class="mono">${fmtMoney(endBankroll)}</b>`;
+
+    renderBankrollChart(done, endBankroll);
+  }
+
+  function renderBankrollChart(done, endBankroll){
+    const canvas = $("bankrollChart");
+    if(!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.clearRect(0,0,width,height);
+
+    if(done.length === 0){
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.font = "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+      ctx.fillText("No finished slips yet.", 12, 20);
+      return;
+    }
+
+    const sorted = done.slice().sort((a,b) => {
+      const dateSort = (a.date||"").localeCompare(b.date||"");
+      if(dateSort !== 0) return dateSort;
+      return (a.createdAt||0) - (b.createdAt||0);
+    });
+
+    const points = [];
+    let bank = num(state.startingBankroll);
+    points.push(bank);
+    for(const s of sorted){
+      bank += plFor(s) ?? 0;
+      points.push(bank);
+    }
+
+    const minVal = Math.min(...points);
+    const maxVal = Math.max(...points);
+    const range = Math.max(1, maxVal - minVal);
+    const padding = 16;
+
+    const xStep = (width - padding * 2) / Math.max(1, points.length - 1);
+    const yFor = (val) => height - padding - ((val - minVal) / range) * (height - padding * 2);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.2)";
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.lineTo(width - padding, height - padding);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(110,168,255,0.85)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    points.forEach((val, i) => {
+      const x = padding + i * xStep;
+      const y = yFor(val);
+      if(i === 0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    ctx.fillStyle = "rgba(255,255,255,0.65)";
+    ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\",\"Courier New\", monospace";
+    ctx.fillText(`End: ${fmtMoney(endBankroll)}`, padding, height - 6);
+  }
+
+  function createPropRow(data = {}){
+    const row = document.createElement("div");
+    row.className = "props-row";
+    row.innerHTML = `
+      <input type="text" class="prop-player" placeholder="Player name" value="${escapeHtml(data.player||"")}">
+      <input type="number" class="prop-line" step="0.1" placeholder="Line" value="${data.line ?? ""}">
+      <select class="prop-ou">
+        <option value="">O/U</option>
+        <option value="O">Over</option>
+        <option value="U">Under</option>
+      </select>
+      <select class="prop-stat">
+        <option value="">Stat</option>
+        <option value="pts">PTS</option>
+        <option value="reb">REB</option>
+        <option value="ast">AST</option>
+        <option value="pra">PRA</option>
+        <option value="3pm">3PM</option>
+        <option value="blk">BLK</option>
+        <option value="stl">STL</option>
+      </select>
+      <button type="button" class="btn danger prop-remove" title="Remove">Remove</button>
+    `;
+    row.querySelector(".prop-ou").value = data.ou || "";
+    row.querySelector(".prop-stat").value = data.stat || "";
+    row.querySelector(".prop-remove").addEventListener("click", () => {
+      row.remove();
+    });
+    return row;
+  }
+
+  function getPropsFromForm(){
+    const rows = Array.from(document.querySelectorAll(".props-row"));
+    return rows.map(row => {
+      const player = row.querySelector(".prop-player").value.trim();
+      const lineRaw = row.querySelector(".prop-line").value;
+      const line = lineRaw === "" ? "" : num(lineRaw);
+      const ou = row.querySelector(".prop-ou").value;
+      const stat = row.querySelector(".prop-stat").value;
+      return { player, line, ou, stat };
+    }).filter(p => p.player || p.line || p.ou || p.stat);
+  }
+
+  function formatPropsLine(props){
+    if(!Array.isArray(props) || props.length === 0) return "";
+    return props.map(p => {
+      const bits = [
+        p.player,
+        p.ou ? (p.ou === "O" ? "O" : "U") : "",
+        p.line !== "" && p.line !== null && p.line !== undefined ? p.line : "",
+        p.stat ? statLabel(p.stat) : ""
+      ].filter(Boolean);
+      return bits.join(" ");
+    }).join(" • ");
+  }
+
+  function formatPropsHtml(props){
+    if(!Array.isArray(props) || props.length === 0) return "";
+    return props.map(p => {
+      const bits = [
+        p.player ? escapeHtml(p.player) : "",
+        p.ou ? escapeHtml(p.ou === "O" ? "O" : "U") : "",
+        p.line !== "" && p.line !== null && p.line !== undefined ? escapeHtml(String(p.line)) : "",
+        p.stat ? escapeHtml(statLabel(p.stat)) : ""
+      ].filter(Boolean);
+      return bits.join(" ");
+    }).join("<br>");
   }
 
   function readSlipFromForm(forcePending=false){
@@ -843,13 +1096,18 @@
     const status = forcePending ? "PENDING" : $("status").value;
     const result = $("result").value;
     const app = $("app").value.trim();
+    const sportsbook = $("sportsbook").value.trim();
+    const league = $("league").value.trim();
+    const oddsType = $("oddsType").value;
     const stake = num($("stake").value);
     const mult = num($("mult").value);
     const paidRaw = $("paid").value;
     const paidMult = (paidRaw === "" ? "" : num(paidRaw));
     const tag = $("tag").value.trim();
+    const group = $("group").value.trim();
     const slipId = $("slipId").value.trim();
     const notes = $("notes").value.trim();
+    const props = getPropsFromForm();
 
     if(stake <= 0) return alert("Stake must be > 0"), null;
     if(mult <= 0) return alert("Listed multiplier must be > 0"), null;
@@ -859,16 +1117,26 @@
       createdAt: Date.now(),
       date, status,
       result: status==="DONE" ? result : "",
-      app, stake, mult, paidMult, tag, slipId, notes
+      app, sportsbook, league, oddsType,
+      stake, mult, paidMult, tag, group, slipId, notes, props
     };
   }
 
   function clearForm(){
+    $("app").value = "";
+    $("sportsbook").value = "";
+    $("league").value = "";
+    $("oddsType").value = "";
     $("stake").value = "";
     $("mult").value = "";
     $("paid").value = "";
+    $("tag").value = "";
+    $("group").value = "";
     $("notes").value = "";
     $("slipId").value = "";
+    const propsWrap = $("propsWrap");
+    propsWrap.innerHTML = "";
+    propsWrap.appendChild(createPropRow());
   }
 
   // Import/Export
@@ -893,17 +1161,18 @@
   }
 
   function exportCsv(){
-    const cols = ["date","status","result","app","stake","mult","paidMult","payout","profitLoss","tag","slipId","notes"];
+    const cols = ["date","status","result","app","sportsbook","league","oddsType","stake","mult","paidMult","payout","profitLoss","tag","group","slipId","props","notes"];
     const lines = [cols.join(",")];
     for(const s of state.slips){
       const p = payoutFor(s);
       const pl = plFor(s);
+      const propsLine = formatPropsLine(s.props);
       const row = [
-        s.date, s.status, s.result, s.app,
+        s.date, s.status, s.result, s.app, s.sportsbook, s.league, s.oddsType,
         s.stake, s.mult, (s.paidMult===""? "" : s.paidMult),
         (p===null? "" : p),
         (pl===null? "" : pl),
-        s.tag, s.slipId,
+        s.tag, s.group, s.slipId, propsLine,
         (s.notes||"").replaceAll("\n"," ")
       ].map(v => {
         const str = String(v ?? "");
@@ -933,12 +1202,17 @@
         status: s.status === "DONE" ? "DONE" : "PENDING",
         result: s.result || "",
         app: s.app || "",
+        sportsbook: s.sportsbook || "",
+        league: s.league || "",
+        oddsType: s.oddsType || "",
         stake: num(s.stake),
         mult: num(s.mult),
         paidMult: (s.paidMult === undefined ? "" : s.paidMult),
         tag: s.tag || "",
+        group: s.group || "",
         slipId: s.slipId || "",
-        notes: s.notes || ""
+        notes: s.notes || "",
+        props: Array.isArray(s.props) ? s.props : []
       }));
 
       save();
@@ -1061,12 +1335,17 @@
   $("viewDate").addEventListener("change", render);
   $("filterStatus").addEventListener("change", render);
   $("filterDate").addEventListener("change", render);
+  $("filterGroup").addEventListener("change", render);
   $("sortBy").addEventListener("change", render);
   $("search").addEventListener("input", render);
 
   $("status").addEventListener("change", () => {
     const done = $("status").value === "DONE";
     $("result").disabled = !done;
+  });
+
+  $("addPropRow").addEventListener("click", () => {
+    $("propsWrap").appendChild(createPropRow());
   });
 
   // open kebab menu (works for table + cards)
@@ -1105,6 +1384,7 @@
   $("date").value = todayISO();
   $("viewDate").value = todayISO();
   $("result").disabled = ($("status").value !== "DONE");
+  $("propsWrap").appendChild(createPropRow());
   render();
 
   // re-render on resize (so Auto view switches smoothly)
