@@ -40,6 +40,29 @@
     }
 
     .wrap{ max-width: 1200px; margin: 16px auto 60px; padding: 0 14px; }
+    .skip-link{
+      position: absolute;
+      top: -40px;
+      left: 12px;
+      background: #111827;
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      z-index: 1001;
+      transition: top .15s ease;
+    }
+    .skip-link:focus{ top: 10px; }
+    .sr-only{
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
 
     /* Topbar */
     .topbar{
@@ -78,6 +101,14 @@
     }
     .btn:hover{ background: rgba(255,255,255,0.10); }
     .btn:active{ transform: translateY(1px); }
+    .btn:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    .kebab:focus-visible{
+      outline: 2px solid rgba(110,168,255,.7);
+      outline-offset: 2px;
+    }
     .btn.primary{
       background: linear-gradient(135deg, rgba(110,168,255,.95), rgba(139,92,246,.85));
       border-color: rgba(255,255,255,0.18);
@@ -226,6 +257,12 @@
     }
     td.right, th.right{ text-align:right; }
     .mono{ font-family: var(--mono); }
+    caption{
+      text-align:left;
+      padding: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
 
     /* Notes truncate in table */
     .notes-trunc{
@@ -367,10 +404,18 @@
         border-radius: 18px;
       }
     }
+
+    @media (prefers-reduced-motion: reduce){
+      *{
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
   </style>
 </head>
 
 <body class="view-auto">
+  <a class="skip-link" href="#main">Skip to content</a>
   <div class="topbar">
     <div class="inner">
       <div class="brand">
@@ -388,7 +433,7 @@
     </div>
   </div>
 
-  <div class="wrap">
+  <main class="wrap" id="main">
     <div class="grid">
       <!-- Left -->
       <div class="card">
@@ -397,40 +442,42 @@
           <span class="hint">Add as Pending, finish later</span>
         </div>
 
-        <div class="row">
+        <div class="row" role="group" aria-label="Add slip form">
           <div class="col-3">
-            <label>Date</label>
+            <label for="date">Date</label>
             <input id="date" type="date" />
           </div>
           <div class="col-3">
-            <label>Status</label>
-            <select id="status">
+            <label for="status">Status</label>
+            <select id="status" aria-describedby="statusHelp">
               <option value="PENDING">Pending</option>
               <option value="DONE">Finished</option>
             </select>
+            <div class="muteline" id="statusHelp">Set to Finished to unlock the result field.</div>
           </div>
           <div class="col-3">
-            <label>Result (only if finished)</label>
-            <select id="result">
+            <label for="result">Result (only if finished)</label>
+            <select id="result" aria-describedby="resultHelp">
               <option value="W">Win</option>
               <option value="L">Loss</option>
               <option value="P">Push</option>
             </select>
+            <div class="muteline" id="resultHelp">Disabled unless Status is Finished.</div>
           </div>
           <div class="col-3">
-            <label>App (optional)</label>
-            <input id="app" type="text" placeholder="PrizePicks / Underdog..." />
+            <label for="app">App (optional)</label>
+            <input id="app" type="text" placeholder="PrizePicks / Underdog..." autocomplete="organization" />
           </div>
           <div class="col-3">
-            <label>Sportsbook (optional)</label>
-            <input id="sportsbook" type="text" placeholder="FanDuel / DraftKings..." />
+            <label for="sportsbook">Sportsbook (optional)</label>
+            <input id="sportsbook" type="text" placeholder="FanDuel / DraftKings..." autocomplete="organization" />
           </div>
           <div class="col-3">
-            <label>League (optional)</label>
+            <label for="league">League (optional)</label>
             <input id="league" type="text" placeholder="NBA / NFL / NHL..." />
           </div>
           <div class="col-3">
-            <label>Odds Type (optional)</label>
+            <label for="oddsType">Odds Type (optional)</label>
             <select id="oddsType">
               <option value="">Select</option>
               <option value="standard">Standard</option>
@@ -440,32 +487,32 @@
           </div>
 
           <div class="col-3">
-            <label>Stake ($)</label>
-            <input id="stake" type="number" step="0.01" placeholder="50" />
+            <label for="stake">Stake ($)</label>
+            <input id="stake" type="number" step="0.01" placeholder="50" min="0.01" inputmode="decimal" />
           </div>
           <div class="col-3">
-            <label>Listed Multiplier (x)</label>
-            <input id="mult" type="number" step="0.01" placeholder="2.0" />
+            <label for="mult">Listed Multiplier (x)</label>
+            <input id="mult" type="number" step="0.01" placeholder="2.0" min="0.01" inputmode="decimal" />
           </div>
           <div class="col-3">
-            <label>Paid Multiplier (optional)</label>
-            <input id="paid" type="number" step="0.01" placeholder="flex partials" />
+            <label for="paid">Paid Multiplier (optional)</label>
+            <input id="paid" type="number" step="0.01" placeholder="flex partials" min="0" inputmode="decimal" />
           </div>
           <div class="col-3">
-            <label>Tag (optional)</label>
+            <label for="tag">Tag (optional)</label>
             <input id="tag" type="text" placeholder="nba / nhl / etc" />
           </div>
           <div class="col-3">
-            <label>Group / Session</label>
+            <label for="group">Group / Session</label>
             <input id="group" type="text" placeholder="Weekend slate / Week 1" />
           </div>
 
           <div class="col-6">
-            <label>Slip ID (optional)</label>
-            <input id="slipId" type="text" placeholder="ticket # / reference" />
+            <label for="slipId">Slip ID (optional)</label>
+            <input id="slipId" type="text" placeholder="ticket # / reference" autocomplete="off" />
           </div>
           <div class="col-6">
-            <label>Notes (players/props)</label>
+            <label for="notes">Notes (players/props)</label>
             <textarea id="notes" placeholder="Westbrook O 15.5 pts&#10;DeRozan O 3.5 ast"></textarea>
           </div>
 
@@ -499,24 +546,25 @@
         <div class="tablewrap">
           <div class="table-scroll">
             <table>
+              <caption>Slip log showing status, payouts, and notes for each entry.</caption>
               <thead>
                 <tr>
-                  <th style="width: 96px;">Date</th>
-                  <th style="width: 110px;">Status</th>
-                  <th style="width: 120px;">App</th>
-                  <th style="width: 120px;">Sportsbook</th>
-                  <th style="width: 90px;">League</th>
-                  <th style="width: 90px;">Odds</th>
-                  <th class="right" style="width: 92px;">Stake</th>
-                  <th class="right" style="width: 72px;">x</th>
-                  <th class="right" style="width: 92px;">Paid x</th>
-                  <th class="right" style="width: 100px;">Payout</th>
-                  <th class="right" style="width: 90px;">P/L</th>
-                  <th style="width: 90px;">Tag</th>
-                  <th style="width: 120px;">Group</th>
-                  <th style="width: 110px;">Slip ID</th>
-                  <th>Notes</th>
-                  <th class="right" style="width: 70px;">⋯</th>
+                  <th scope="col" style="width: 96px;">Date</th>
+                  <th scope="col" style="width: 110px;">Status</th>
+                  <th scope="col" style="width: 120px;">App</th>
+                  <th scope="col" style="width: 120px;">Sportsbook</th>
+                  <th scope="col" style="width: 90px;">League</th>
+                  <th scope="col" style="width: 90px;">Odds</th>
+                  <th scope="col" class="right" style="width: 92px;">Stake</th>
+                  <th scope="col" class="right" style="width: 72px;">x</th>
+                  <th scope="col" class="right" style="width: 92px;">Paid x</th>
+                  <th scope="col" class="right" style="width: 100px;">Payout</th>
+                  <th scope="col" class="right" style="width: 90px;">P/L</th>
+                  <th scope="col" style="width: 90px;">Tag</th>
+                  <th scope="col" style="width: 120px;">Group</th>
+                  <th scope="col" style="width: 110px;">Slip ID</th>
+                  <th scope="col">Notes</th>
+                  <th scope="col" class="right" style="width: 70px;">⋯</th>
                 </tr>
               </thead>
               <tbody id="rows"></tbody>
@@ -537,17 +585,17 @@
           </div>
           <div class="row">
             <div class="col-6">
-              <label>View Date</label>
+              <label for="viewDate">View Date</label>
               <input id="viewDate" type="date" />
             </div>
             <div class="col-6">
-              <label>Starting Bankroll</label>
-              <input id="bankroll" type="number" step="0.01" placeholder="1000" />
+              <label for="bankroll">Starting Bankroll</label>
+              <input id="bankroll" type="number" step="0.01" placeholder="1000" inputmode="decimal" />
             </div>
           </div>
 
-          <div class="kpis" id="kpis"></div>
-          <div class="bankline" id="bankrollLine"></div>
+          <div class="kpis" id="kpis" role="status" aria-live="polite"></div>
+          <div class="bankline" id="bankrollLine" role="status" aria-live="polite"></div>
           <div class="chart-wrap">
             <canvas id="bankrollChart" width="640" height="200"></canvas>
           </div>
@@ -560,7 +608,7 @@
           </div>
           <div class="row">
             <div class="col-6">
-              <label>Status</label>
+              <label for="filterStatus">Status</label>
               <select id="filterStatus">
                 <option value="ALL">All</option>
                 <option value="PENDING">Pending</option>
@@ -568,7 +616,7 @@
               </select>
             </div>
             <div class="col-6">
-              <label>Sort</label>
+              <label for="sortBy">Sort</label>
               <select id="sortBy">
                 <option value="date_desc">Date (new → old)</option>
                 <option value="date_asc">Date (old → new)</option>
@@ -577,23 +625,23 @@
               </select>
             </div>
             <div class="col-6">
-              <label>Show only date</label>
+              <label for="filterDate">Show only date</label>
               <select id="filterDate">
                 <option value="ALL">All dates</option>
               </select>
             </div>
             <div class="col-6">
-              <label>Search (notes/app/sportsbook/league/tag/group/id)</label>
+              <label for="search">Search (notes/app/sportsbook/league/tag/group/id)</label>
               <input id="search" type="text" placeholder="type to filter..." />
             </div>
             <div class="col-6">
-              <label>Group / Session</label>
+              <label for="filterGroup">Group / Session</label>
               <select id="filterGroup">
                 <option value="ALL">All groups</option>
               </select>
             </div>
             <div class="col-12">
-              <label>Auto-save</label>
+              <label for="autosave">Auto-save</label>
               <select id="autosave">
                 <option value="on">On (recommended)</option>
                 <option value="off">Off (manual export only)</option>
@@ -605,7 +653,7 @@
 
       </div>
     </div>
-  </div>
+  </main>
 
   <!-- Floating actions menu -->
   <div class="menu" id="menu">
