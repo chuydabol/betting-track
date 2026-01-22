@@ -466,15 +466,7 @@
           </div>
           <div class="col-3">
             <label for="app">App (optional)</label>
-            <input id="app" type="text" placeholder="PrizePicks / Underdog..." autocomplete="organization" />
-          </div>
-          <div class="col-3">
-            <label for="sportsbook">Sportsbook (optional)</label>
-            <input id="sportsbook" type="text" placeholder="FanDuel / DraftKings..." autocomplete="organization" />
-          </div>
-          <div class="col-3">
-            <label for="league">League (optional)</label>
-            <input id="league" type="text" placeholder="NBA / NFL / NHL..." />
+
           </div>
           <div class="col-3">
             <label for="oddsType">Odds Type (optional)</label>
@@ -500,16 +492,12 @@
           </div>
           <div class="col-3">
             <label for="tag">Tag (optional)</label>
-            <input id="tag" type="text" placeholder="nba / nhl / etc" />
-          </div>
-          <div class="col-3">
-            <label for="group">Group / Session</label>
-            <input id="group" type="text" placeholder="Weekend slate / Week 1" />
+
           </div>
 
           <div class="col-6">
             <label for="slipId">Slip ID (optional)</label>
-            <input id="slipId" type="text" placeholder="ticket # / reference" autocomplete="off" />
+
           </div>
           <div class="col-6">
             <label for="notes">Notes (players/props)</label>
@@ -526,6 +514,13 @@
         <div class="muteline">
           Finished payout: <span class="mono">stake × (paid x if set else listed x)</span>. Pending slips don’t affect profit.
         </div>
+
+        <datalist id="appList"></datalist>
+        <datalist id="sportsbookList"></datalist>
+        <datalist id="leagueList"></datalist>
+        <datalist id="tagList"></datalist>
+        <datalist id="groupList"></datalist>
+        <datalist id="slipIdList"></datalist>
 
         <div style="height:14px"></div>
 
@@ -780,6 +775,35 @@
     select.value = groups.includes(current) ? current : "ALL";
   }
 
+  function refreshDatalists(){
+    const presets = {
+      appList: ["PrizePicks", "Underdog", "FanDuel", "DraftKings", "BetMGM", "Caesars"],
+      sportsbookList: ["FanDuel", "DraftKings", "BetMGM", "Caesars", "PointsBet", "WynnBET"],
+      leagueList: ["NBA", "NFL", "NHL", "MLB", "NCAAF", "NCAAB", "Soccer", "WNBA", "MMA", "Tennis"],
+      tagList: ["nba", "nfl", "nhl", "mlb", "props", "parlay", "live"],
+      groupList: [],
+      slipIdList: []
+    };
+
+    const fromSlips = (key) => state.slips.map(s => s[key]).filter(Boolean);
+    const merge = (preset, dynamic) => Array.from(new Set([...preset, ...dynamic])).sort();
+
+    const lists = {
+      appList: merge(presets.appList, fromSlips("app")),
+      sportsbookList: merge(presets.sportsbookList, fromSlips("sportsbook")),
+      leagueList: merge(presets.leagueList, fromSlips("league")),
+      tagList: merge(presets.tagList, fromSlips("tag")),
+      groupList: merge(presets.groupList, fromSlips("group")),
+      slipIdList: merge(presets.slipIdList, fromSlips("slipId"))
+    };
+
+    Object.entries(lists).forEach(([id, values]) => {
+      const list = $(id);
+      if(!list) return;
+      list.innerHTML = values.map(v => `<option value="${escapeHtml(v)}"></option>`).join("");
+    });
+  }
+
   function applyFilters(list){
     const status = $("filterStatus").value;
     const query = $("search").value.trim().toLowerCase();
@@ -834,6 +858,7 @@
   function render(){
     refreshDateDropdown();
     refreshGroupDropdown();
+    refreshDatalists();
     setBodyView();
 
     $("bankroll").value = String(state.startingBankroll || "");
