@@ -541,18 +541,6 @@
             </select>
           </div>
           <div class="col-3">
-            <label for="creator">Slip Made By</label>
-            <select id="creator">
-              <option value="CHUY">CHUY (me)</option>
-              <option value="ENVIXITY">ENVIXITY</option>
-              <option value="JAY">JAY</option>
-              <option value="OCHAN">OCHAN</option>
-              <option value="FLUID">FLUID</option>
-              <option value="POPS">POPS</option>
-              <option value="MIX">MIX (combined)</option>
-            </select>
-          </div>
-          <div class="col-3">
             <label for="analystId">Analyst ID</label>
             <input id="analystId" type="text" placeholder="Use a unique handle" />
           </div>
@@ -587,35 +575,12 @@
             <input id="mult" type="number" step="0.01" placeholder="2.0" min="0.01" inputmode="decimal" />
           </div>
           <div class="col-3">
-            <label for="oddsDecimal">Odds (Decimal)</label>
-            <input id="oddsDecimal" type="number" step="0.01" placeholder="1.91" min="0.01" inputmode="decimal" />
-          </div>
-          <div class="col-3">
             <label for="paid">Paid Multiplier (optional)</label>
             <input id="paid" type="number" step="0.01" placeholder="1.8" min="0" inputmode="decimal" />
           </div>
           <div class="col-3">
-            <label for="marketType">Market Type</label>
-            <input id="marketType" type="text" placeholder="player props" />
-          </div>
-          <div class="col-3">
-            <label for="confidence">Confidence (1–5)</label>
-            <select id="confidence">
-              <option value="">Not set</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-            </select>
-          </div>
-          <div class="col-3">
             <label for="tag">Tag (optional)</label>
             <input id="tag" type="text" list="tagList" placeholder="Parlay" />
-          </div>
-          <div class="col-3">
-            <label for="tags">Tags (comma-separated)</label>
-            <input id="tags" type="text" placeholder="live, alt, boosted" />
           </div>
           <div class="col-3">
             <label for="group">Group / Session (optional)</label>
@@ -1820,20 +1785,20 @@
     const oddsType = $("oddsType").value;
     const stake = num($("stake").value);
     const mult = num($("mult").value);
-    const oddsDecimalInput = num($("oddsDecimal").value);
+    const oddsDecimalInput = num($("oddsDecimal")?.value);
     const paidRaw = $("paid").value;
     const paidMult = (paidRaw === "" ? "" : num(paidRaw));
     const tag = $("tag").value.trim();
-    let tags = parseTags($("tags").value);
+    let tags = parseTags($("tags")?.value);
     if(!tags.length && tag) tags = parseTags(tag);
     const group = $("group").value.trim();
-    const creator = $("creator").value;
+    const creator = $("creator") ? $("creator").value : "CHUY";
     const analystId = $("analystId").value.trim();
     const analystType = $("analystType").value;
     const slipType = $("slipType").value;
     const legsCount = num($("legsCount").value);
-    const marketType = $("marketType").value.trim();
-    const confidenceRaw = $("confidence").value;
+    const marketType = $("marketType")?.value.trim() || "Player props";
+    const confidenceRaw = $("confidence")?.value || "";
     const confidence = confidenceRaw ? num(confidenceRaw) : null;
     const slipId = $("slipId").value.trim();
     const players = readPlayersFromForm();
@@ -1843,7 +1808,6 @@
     if(mult <= 0) return alert("Listed multiplier must be > 0"), null;
     const oddsDecimal = oddsDecimalInput > 0 ? oddsDecimalInput : mult;
     if(oddsDecimal <= 0) return alert("Odds (decimal) must be > 0"), null;
-    if(confidence !== null && (confidence < 1 || confidence > 5)) return alert("Confidence must be 1–5."), null;
     if(players.length === 0) return alert("Add at least one player/prop."), null;
 
     return {
@@ -1864,25 +1828,29 @@
   }
 
   function clearForm(){
-    $("app").value = "";
-    $("sportsbook").value = "";
-    $("league").value = "";
-    $("oddsType").value = "";
-    $("stake").value = "";
-    $("mult").value = "";
-    $("oddsDecimal").value = "";
-    $("paid").value = "";
-    $("tag").value = "";
-    $("tags").value = "";
-    $("group").value = "";
-    $("slipId").value = "";
-    $("creator").value = "CHUY";
-    $("analystId").value = "";
-    $("analystType").value = "Own";
-    $("slipType").value = "";
-    $("legsCount").value = "";
-    $("marketType").value = "";
-    $("confidence").value = "";
+    const setValue = (id, value) => {
+      const el = $(id);
+      if(el) el.value = value;
+    };
+    setValue("app", "");
+    setValue("sportsbook", "");
+    setValue("league", "");
+    setValue("oddsType", "");
+    setValue("stake", "");
+    setValue("mult", "");
+    setValue("oddsDecimal", "");
+    setValue("paid", "");
+    setValue("tag", "");
+    setValue("tags", "");
+    setValue("group", "");
+    setValue("slipId", "");
+    setValue("creator", "CHUY");
+    setValue("analystId", "");
+    setValue("analystType", "Own");
+    setValue("slipType", "");
+    setValue("legsCount", "");
+    setValue("marketType", "");
+    setValue("confidence", "");
     renderPlayers([]);
   }
 
