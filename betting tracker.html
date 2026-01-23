@@ -264,7 +264,7 @@
       color: var(--muted);
     }
 
-    /* Notes truncate in table */
+    /* Players truncate in table */
     .notes-trunc{
       white-space: nowrap;
       max-width: 340px;
@@ -477,31 +477,28 @@
               <option value="promo">Promo</option>
             </select>
           </div>
+          <div class="col-3">
+            <label for="creator">Slip Made By</label>
+            <select id="creator">
+              <option value="CHUY">CHUY (me)</option>
+              <option value="ENVIXITY">ENVIXITY</option>
+              <option value="JAY">JAY</option>
+              <option value="OCHAN">OCHAN</option>
+              <option value="FLUID">FLUID</option>
+              <option value="POPS">POPS</option>
+              <option value="MIX">MIX (combined)</option>
+            </select>
+          </div>
 
           <div class="col-3">
             <label for="stake">Stake ($)</label>
             <input id="stake" type="number" step="0.01" placeholder="50" min="0.01" inputmode="decimal" />
-          </div>
-          <div class="col-3">
-            <label for="mult">Listed Multiplier (x)</label>
-            <input id="mult" type="number" step="0.01" placeholder="2.0" min="0.01" inputmode="decimal" />
-          </div>
-          <div class="col-3">
-            <label for="paid">Paid Multiplier (optional)</label>
-            <input id="paid" type="number" step="0.01" placeholder="flex partials" min="0" inputmode="decimal" />
-          </div>
-          <div class="col-3">
-            <label for="tag">Tag (optional)</label>
 
           </div>
 
           <div class="col-6">
             <label for="slipId">Slip ID (optional)</label>
 
-          </div>
-          <div class="col-6">
-            <label for="notes">Notes (players/props)</label>
-            <textarea id="notes" placeholder="Westbrook O 15.5 pts&#10;DeRozan O 3.5 ast"></textarea>
           </div>
 
           <div class="col-12" style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -541,7 +538,7 @@
         <div class="tablewrap">
           <div class="table-scroll">
             <table>
-              <caption>Slip log showing status, payouts, and notes for each entry.</caption>
+
               <thead>
                 <tr>
                   <th scope="col" style="width: 96px;">Date</th>
@@ -550,6 +547,7 @@
                   <th scope="col" style="width: 120px;">Sportsbook</th>
                   <th scope="col" style="width: 90px;">League</th>
                   <th scope="col" style="width: 90px;">Odds</th>
+
                   <th scope="col" class="right" style="width: 92px;">Stake</th>
                   <th scope="col" class="right" style="width: 72px;">x</th>
                   <th scope="col" class="right" style="width: 92px;">Paid x</th>
@@ -558,7 +556,7 @@
                   <th scope="col" style="width: 90px;">Tag</th>
                   <th scope="col" style="width: 120px;">Group</th>
                   <th scope="col" style="width: 110px;">Slip ID</th>
-                  <th scope="col">Notes</th>
+
                   <th scope="col" class="right" style="width: 70px;">⋯</th>
                 </tr>
               </thead>
@@ -626,7 +624,7 @@
               </select>
             </div>
             <div class="col-6">
-              <label for="search">Search (notes/app/sportsbook/league/tag/group/id)</label>
+
               <input id="search" type="text" placeholder="type to filter..." />
             </div>
             <div class="col-6">
@@ -713,6 +711,61 @@
 
   const genId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
 
+  const playersContainer = () => $("players");
+  const playerRowTemplate = (player = {}, index = 0) => `
+    <div class="row" data-player-row>
+      <div class="col-6">
+        <label>Player ${index + 1}</label>
+        <input type="text" class="player-name" placeholder="Player name" value="${escapeHtml(player.name || "")}" />
+      </div>
+      <div class="col-3">
+        <label>Prop Line</label>
+        <input type="number" class="player-line" step="0.1" placeholder="15.5" value="${escapeHtml(player.line || "")}" />
+      </div>
+      <div class="col-3">
+        <label>O/U</label>
+        <select class="player-ou">
+          <option value="">Select</option>
+          <option value="Over" ${player.ou === "Over" ? "selected" : ""}>Over</option>
+          <option value="Under" ${player.ou === "Under" ? "selected" : ""}>Under</option>
+        </select>
+        <button class="btn danger remove-player" type="button" title="Remove player" style="margin-top:10px; width:100%;">Remove</button>
+      </div>
+    </div>
+  `;
+
+  function renderPlayers(players){
+    const container = playersContainer();
+    if(!container) return;
+    const list = players.length ? players : [{name:"", line:"", ou:""}];
+    container.innerHTML = list.map((player, idx) => playerRowTemplate(player, idx)).join("");
+  }
+
+  function readPlayersDraft(){
+    const container = playersContainer();
+    if(!container) return [];
+    return Array.from(container.querySelectorAll("[data-player-row]")).map(row => ({
+      name: row.querySelector(".player-name")?.value.trim() || "",
+      line: row.querySelector(".player-line")?.value.trim() || "",
+      ou: row.querySelector(".player-ou")?.value || ""
+    }));
+  }
+
+  function readPlayersFromForm(){
+    const draft = readPlayersDraft();
+    const players = [];
+    for(const player of draft){
+      const {name, line, ou} = player;
+      if(!name && !line && !ou) continue;
+      if(!name || !line || !ou){
+        alert("Each player row needs a name, prop line, and over/under selection.");
+        return null;
+      }
+      players.push({name, line, ou});
+    }
+    return players;
+  }
+
   function setBodyView(){
     document.body.classList.remove("view-auto","view-table","view-cards");
     const v = state.logView || "auto";
@@ -782,7 +835,7 @@
       leagueList: ["NBA", "NFL", "NHL", "MLB", "NCAAF", "NCAAB", "Soccer", "WNBA", "MMA", "Tennis"],
       tagList: ["nba", "nfl", "nhl", "mlb", "props", "parlay", "live"],
       groupList: [],
-      slipIdList: []
+
     };
 
     const fromSlips = (key) => state.slips.map(s => s[key]).filter(Boolean);
@@ -794,7 +847,7 @@
       leagueList: merge(presets.leagueList, fromSlips("league")),
       tagList: merge(presets.tagList, fromSlips("tag")),
       groupList: merge(presets.groupList, fromSlips("group")),
-      slipIdList: merge(presets.slipIdList, fromSlips("slipId"))
+
     };
 
     Object.entries(lists).forEach(([id, values]) => {
@@ -823,10 +876,11 @@
         (s.sportsbook||"").toLowerCase().includes(query) ||
         (s.league||"").toLowerCase().includes(query) ||
         (s.oddsType||"").toLowerCase().includes(query) ||
-        (s.notes||"").toLowerCase().includes(query) ||
+        (s.creator||"").toLowerCase().includes(query) ||
         (s.tag||"").toLowerCase().includes(query) ||
         (s.group||"").toLowerCase().includes(query) ||
-        (s.slipId||"").toLowerCase().includes(query)
+        (s.slipId||"").toLowerCase().includes(query) ||
+        (s.players || []).some(p => `${p.name} ${p.ou} ${p.line}`.toLowerCase().includes(query))
       );
     }
 
@@ -882,28 +936,31 @@
         ? `<span style="color:rgba(255,255,255,.45)">—</span>`
         : `<span class="mono">${num(s.paidMult).toFixed(2)}x</span>`;
 
-      const notesOneLine = (s.notes || "").replaceAll("\n"," • ");
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td class="mono">${escapeHtml(s.date||"")}</td>
-        <td>${statusPill(s)}</td>
-        <td>${escapeHtml(s.app||"")}</td>
-        <td>${escapeHtml(s.sportsbook||"")}</td>
-        <td>${escapeHtml(s.league||"")}</td>
-        <td>${escapeHtml(s.oddsType||"")}</td>
-        <td class="right mono">${fmtMoney(s.stake)}</td>
-        <td class="right mono">${num(s.mult).toFixed(2)}x</td>
-        <td class="right">${paidCell}</td>
-        <td class="right mono">${payoutCell}</td>
-        <td class="right">${plCell}</td>
-        <td>${escapeHtml(s.tag||"")}</td>
-        <td>${escapeHtml(s.group||"")}</td>
-        <td class="mono">${escapeHtml(s.slipId||"")}</td>
-        <td class="notes-trunc" title="${escapeHtml(s.notes||"")}">${escapeHtml(notesOneLine)}</td>
-        <td class="right">
-          <button class="kebab" title="Actions" data-kebab="${s.id}">⋯</button>
-        </td>
-      `;
+    const playersText = (s.players || [])
+      .map(p => `${p.name} ${p.ou} ${p.line}`)
+      .join(" • ");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${escapeHtml(s.date||"")}</td>
+      <td>${statusPill(s)}</td>
+      <td>${escapeHtml(s.app||"")}</td>
+      <td>${escapeHtml(s.sportsbook||"")}</td>
+      <td>${escapeHtml(s.league||"")}</td>
+      <td>${escapeHtml(s.oddsType||"")}</td>
+      <td>${escapeHtml(s.creator||"")}</td>
+      <td class="right mono">${fmtMoney(s.stake)}</td>
+      <td class="right mono">${num(s.mult).toFixed(2)}x</td>
+      <td class="right">${paidCell}</td>
+      <td class="right mono">${payoutCell}</td>
+      <td class="right">${plCell}</td>
+      <td>${escapeHtml(s.tag||"")}</td>
+      <td>${escapeHtml(s.group||"")}</td>
+      <td class="mono">${escapeHtml(s.slipId||"")}</td>
+      <td class="notes-trunc" title="${escapeHtml(playersText)}">${escapeHtml(playersText)}</td>
+      <td class="right">
+        <button class="kebab" title="Actions" data-kebab="${s.id}">⋯</button>
+      </td>
+    `;
       tbody.appendChild(tr);
     }
 
@@ -918,6 +975,9 @@
       const plCls = (pl === null) ? "neu" : (pl>0 ? "pos" : pl<0 ? "neg" : "neu");
 
       const paidText = (s.paidMult === "" || s.paidMult === null || s.paidMult === undefined) ? "—" : `${num(s.paidMult).toFixed(2)}x`;
+      const playersList = (s.players || [])
+        .map(p => `${p.name} ${p.ou} ${p.line}`)
+        .join("\n");
 
       const el = document.createElement("div");
       el.className = "slipCard";
@@ -933,6 +993,7 @@
               ${s.oddsType ? `<span>• ${escapeHtml(s.oddsType)}</span>` : ""}
               ${s.tag ? `<span>• ${escapeHtml(s.tag)}</span>` : ""}
               ${s.group ? `<span>• ${escapeHtml(s.group)}</span>` : ""}
+              ${s.creator ? `<span>• ${escapeHtml(s.creator)}</span>` : ""}
             </div>
           </div>
           <button class="kebab" title="Actions" data-kebab="${s.id}">⋯</button>
@@ -948,7 +1009,7 @@
           <div class="kv"><div class="k">Group</div><div class="v mono">${escapeHtml(s.group||"—")}</div></div>
         </div>
 
-        ${s.notes ? `<div class="notes">${escapeHtml(s.notes)}</div>` : ""}
+        ${playersList ? `<div class="notes">${escapeHtml(playersList)}</div>` : ""}
       `;
       cards.appendChild(el);
     }
@@ -1066,11 +1127,14 @@
     const paidMult = (paidRaw === "" ? "" : num(paidRaw));
     const tag = $("tag").value.trim();
     const group = $("group").value.trim();
+    const creator = $("creator").value;
     const slipId = $("slipId").value.trim();
-    const notes = $("notes").value.trim();
+    const players = readPlayersFromForm();
+    if(players === null) return null;
 
     if(stake <= 0) return alert("Stake must be > 0"), null;
     if(mult <= 0) return alert("Listed multiplier must be > 0"), null;
+    if(players.length === 0) return alert("Add at least one player/prop."), null;
 
     return {
       id: genId(),
@@ -1078,7 +1142,7 @@
       date, status,
       result: status==="DONE" ? result : "",
       app, sportsbook, league, oddsType,
-      stake, mult, paidMult, tag, group, slipId, notes
+      creator, stake, mult, paidMult, tag, group, slipId, players
     };
   }
 
@@ -1092,8 +1156,9 @@
     $("paid").value = "";
     $("tag").value = "";
     $("group").value = "";
-    $("notes").value = "";
     $("slipId").value = "";
+    $("creator").value = "CHUY";
+    renderPlayers([]);
   }
 
   // Import/Export
@@ -1118,18 +1183,21 @@
   }
 
   function exportCsv(){
-    const cols = ["date","status","result","app","sportsbook","league","oddsType","stake","mult","paidMult","payout","profitLoss","tag","group","slipId","notes"];
+    const cols = ["date","status","result","app","sportsbook","league","oddsType","creator","stake","mult","paidMult","payout","profitLoss","tag","group","slipId","players"];
     const lines = [cols.join(",")];
     for(const s of state.slips){
       const p = payoutFor(s);
       const pl = plFor(s);
+      const playersCsv = (s.players || [])
+        .map(player => `${player.name} ${player.ou} ${player.line}`)
+        .join(" | ");
       const row = [
-        s.date, s.status, s.result, s.app, s.sportsbook, s.league, s.oddsType,
+        s.date, s.status, s.result, s.app, s.sportsbook, s.league, s.oddsType, s.creator,
         s.stake, s.mult, (s.paidMult===""? "" : s.paidMult),
         (p===null? "" : p),
         (pl===null? "" : pl),
         s.tag, s.group, s.slipId,
-        (s.notes||"").replaceAll("\n"," ")
+        playersCsv
       ].map(v => {
         const str = String(v ?? "");
         return /[",\n]/.test(str) ? `"${str.replaceAll('"','""')}"` : str;
@@ -1161,13 +1229,14 @@
         sportsbook: s.sportsbook || "",
         league: s.league || "",
         oddsType: s.oddsType || "",
+        creator: s.creator || "CHUY",
         stake: num(s.stake),
         mult: num(s.mult),
         paidMult: (s.paidMult === undefined ? "" : s.paidMult),
         tag: s.tag || "",
         group: s.group || "",
         slipId: s.slipId || "",
-        notes: s.notes || ""
+        players: Array.isArray(s.players) ? s.players : ((s.notes && !s.players) ? [{name: s.notes, line: "", ou: ""}] : [])
       }));
 
       save();
@@ -1263,6 +1332,22 @@
     save(); render();
   });
 
+  $("addPlayerBtn").addEventListener("click", () => {
+    const current = readPlayersDraft();
+    current.push({name:"", line:"", ou:""});
+    renderPlayers(current);
+  });
+
+  playersContainer().addEventListener("click", (e) => {
+    if(!e.target.closest(".remove-player")) return;
+    const rows = Array.from(playersContainer().querySelectorAll("[data-player-row]"));
+    const row = e.target.closest("[data-player-row]");
+    const index = rows.indexOf(row);
+    const current = readPlayersDraft();
+    current.splice(index, 1);
+    renderPlayers(current);
+  });
+
   $("exportBtn").addEventListener("click", exportTxt);
   $("exportCsvBtn").addEventListener("click", exportCsv);
 
@@ -1335,6 +1420,8 @@
   $("date").value = todayISO();
   $("viewDate").value = todayISO();
   $("result").disabled = ($("status").value !== "DONE");
+  $("creator").value = "CHUY";
+  renderPlayers([]);
   render();
 
   // re-render on resize (so Auto view switches smoothly)
