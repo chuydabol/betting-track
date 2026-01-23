@@ -257,6 +257,17 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
     }
+    .profile-section{
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+    }
+    .profile-section-title{
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--muted2);
+    }
     .profile-stat{
       background: rgba(255,255,255,0.05);
       border: 1px solid var(--border);
@@ -1126,23 +1137,50 @@
     };
   }
 
-  function analyzeAnalystProfiles(doneSlips){
+  function collectPropRecords(slips){
+    const byAnalyst = new Map();
+    slips.forEach(slip => {
+      const analystId = String(slip.analystId || slip.creator || "Unknown").trim() || "Unknown";
+      if(!byAnalyst.has(analystId)) byAnalyst.set(analystId, []);
+      const props = Array.isArray(slip.players) ? slip.players : [];
+      const marketLabel = slip.marketType || slip.league || "Player props";
+      props.forEach(player => {
+        const outcome = player.outcome || derivePlayerOutcome(player);
+        if(outcome !== "Win" && outcome !== "Loss") return;
+        byAnalyst.get(analystId).push({
+          analystId,
+          player: player.name || "Unknown Player",
+          market: marketLabel,
+          line: player.line || "",
+          result: outcome
+        });
+      });
+    });
+    return byAnalyst;
+  }
+
+  function analyzeAnalystProfiles(doneSlips, allSlips = doneSlips){
     const normalized = doneSlips.map(asAnalystSlip);
     const byAnalyst = new Map();
     normalized.forEach(slip => {
       if(!byAnalyst.has(slip.analystId)) byAnalyst.set(slip.analystId, []);
       byAnalyst.get(slip.analystId).push(slip);
     });
+    const propRecordsByAnalyst = collectPropRecords(allSlips);
+    for(const analystId of propRecordsByAnalyst.keys()){
+      if(!byAnalyst.has(analystId)) byAnalyst.set(analystId, []);
+    }
     PRESET_ANALYSTS.forEach(({id}) => {
       if(!byAnalyst.has(id)) byAnalyst.set(id, []);
     });
 
     const profiles = {};
     for(const [analystId, slips] of byAnalyst.entries()){
+      const propRecords = propRecordsByAnalyst.get(analystId) || [];
       if(slips.length){
-        profiles[analystId] = buildAnalystProfile(analystId, slips);
+        profiles[analystId] = buildAnalystProfile(analystId, slips, propRecords);
       }else{
-        const profile = buildAnalystProfile(analystId, []);
+        const profile = buildAnalystProfile(analystId, [], propRecords);
         const presetType = getPresetAnalystType(analystId);
         if(presetType) profile.analystType = presetType;
         profiles[analystId] = profile;
@@ -1151,7 +1189,7 @@
     return profiles;
   }
 
-  function buildAnalystProfile(analystId, slips){
+  function buildAnalystProfile(analystId, slips, propRecords = []){
     const ordered = slips.slice().sort((a,b) => {
       const dateSort = (a.date||"").localeCompare(b.date||"");
       if(dateSort !== 0) return dateSort;
@@ -1230,6 +1268,10 @@
       sampleSize: slips.length
     });
 
+    const propWins = propRecords.filter(prop => prop.result === "Win").length;
+    const totalProps = propRecords.length;
+    const propHitRate = totalProps > 0 ? propWins / totalProps : 0;
+
     return {
       analystId,
       analystType: slips[0]?.analystType || "Own",
@@ -1241,6 +1283,11 @@
         volatility: volatilityBucket,
         maxDrawdown: drawdownStats.maxDrawdownPct,
         status
+      },
+      props: {
+        hitRate: propHitRate,
+        totalProps,
+        wins: propWins
       },
       strengths: {
         bestMarket,
@@ -1282,7 +1329,8 @@
         roiByOddsRange: oddsStats,
         legInflationPenalty: legPenalty,
         tagPerformance: tagStats,
-        profitSeries
+        profitSeries,
+        propRecords
       }
     };
   }
@@ -1620,8 +1668,8 @@
     return d;
   }
 
-  function renderAnalystProfiles(done){
-    const profiles = analyzeAnalystProfiles(done);
+  function renderAnalystProfiles(done, allSlips){
+    const profiles = analyzeAnalystProfiles(done, allSlips);
     const analystIds = Object.keys(profiles).sort();
     const primarySelect = $("analystPrimary");
     const compareSelect = $("analystCompare");
@@ -1633,7 +1681,7 @@
     compareSelect.innerHTML = `<option value="">None</option>` + analystIds.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`).join("");
 
     if(!analystIds.length){
-      grid.innerHTML = `<div class="muteline">No finished slips yet. Profiles appear after closing out slips.</div>`;
+      grid.innerHTML = `<div class="muteline">No analyst data yet. Add slips to see profiles.</div>`;
       return;
     }
 
@@ -1660,36 +1708,55 @@
     const trends = profile.trends;
     const strengths = profile.strengths;
     const weaknesses = profile.weaknesses;
+    const props = profile.props || {hitRate: 0, totalProps: 0};
     const detail = profile.detail;
-    const statusClass = summary.status === "HOT" ? "pos" : summary.status === "COLD" ? "neg" : "neu";
     const sparkline = renderProfileSparkline(detail.profitSeries || []);
+    const trendLabel = trends.last10ROI > summary.ROI
+      ? {text: "📈 Improving", cls: "pos"}
+      : trends.last10ROI < summary.ROI
+        ? {text: "📉 Declining", cls: "neg"}
+        : {text: "➖ Flat", cls: "neu"};
+    const showLegacyDetails = false;
+    const legacyDetails = showLegacyDetails ? `
+      <div class="profile-list">
+        <div><strong>Strengths:</strong> ${escapeHtml(strengths.bestMarket)} market, ${escapeHtml(strengths.bestOddsRange)} odds, ${escapeHtml(strengths.bestSlipType)} slips</div>
+        <div><strong>Weaknesses:</strong> ${escapeHtml(weaknesses.worstMarket)} market, ${weaknesses.overLegging ? "Over-legging risk" : "Leg structure ok"}, ${weaknesses.highVariance ? "High variance" : "Controlled variance"}</div>
+        <div><strong>Consistency:</strong> Last 25 ROI ${fmtPct(trends.last25ROI)} • Avg drawdown ${fmtPct(detail.drawdownStats.avgDrawdownPct)} • Avg recovery ${detail.drawdownStats.avgRecovery.toFixed(1)} slips</div>
+        <div><strong>Discipline:</strong> Longest losing streak ${detail.losingStreaks.longest} • Avg losing streak ${detail.losingStreaks.average.toFixed(1)}</div>
+        <div><strong>Confidence:</strong> Calibration ${Math.round(detail.confidenceAccuracy * 100)}%</div>
+      </div>
+    ` : "";
     return `
       <div class="profile-card">
         <div>
           <div class="profile-pill">${label}</div>
           <h3>${escapeHtml(profile.analystId)}</h3>
-          <div class="profile-meta">${escapeHtml(profile.analystType)} • ${detail.wins}W-${detail.losses}L-${detail.pushes}P • ${detail.totalStaked ? fmtMoney(detail.totalStaked) : fmtMoney(0)} staked</div>
+          <div class="profile-meta">${escapeHtml(profile.analystType)} • ${detail.totalStaked ? fmtMoney(detail.totalStaked) : fmtMoney(0)} staked</div>
         </div>
-        ${sparkline}
-        <div class="profile-stats">
-          <div class="profile-stat"><div class="k">ROI</div><div class="v mono">${fmtPct(summary.ROI)}</div></div>
-          <div class="profile-stat"><div class="k">Hit Rate</div><div class="v mono">${fmtPct(summary.hitRate)}</div></div>
-          <div class="profile-stat"><div class="k">Edge</div><div class="v mono">${fmtPct(summary.edge)}</div></div>
-          <div class="profile-stat"><div class="k">Profit / $100</div><div class="v mono">${fmtMoney(summary.profitPer100)}</div></div>
-          <div class="profile-stat"><div class="k">Volatility</div><div class="v mono">${summary.volatility}</div></div>
-          <div class="profile-stat"><div class="k">Max Drawdown</div><div class="v mono">${fmtPct(summary.maxDrawdown)}</div></div>
-          <div class="profile-stat"><div class="k">Last 10 ROI</div><div class="v mono">${fmtPct(trends.last10ROI)}</div></div>
-          <div class="profile-stat"><div class="k">Trend</div><div class="v ${statusClass}">${trends.direction} • ${summary.status}</div></div>
-          <div class="profile-stat"><div class="k">Composite Score</div><div class="v mono">${detail.compositeScore.toFixed(1)}</div></div>
-          <div class="profile-stat"><div class="k">Luck Factor</div><div class="v mono">${detail.luckFactor >= 0 ? "+" : ""}${detail.luckFactor.toFixed(2)}u</div></div>
+        <div class="profile-section">
+          <div class="profile-section-title">Slip Performance</div>
+          <div class="profile-stats">
+            <div class="profile-stat"><div class="k">Slip ROI</div><div class="v mono">${fmtPct(summary.ROI)}</div></div>
+            <div class="profile-stat"><div class="k">Slip Hit Rate</div><div class="v mono">${fmtPct(summary.hitRate)}</div></div>
+            <div class="profile-stat"><div class="k">Total Finished Slips</div><div class="v mono">${detail.wins + detail.losses + detail.pushes}</div></div>
+          </div>
         </div>
-        <div class="profile-list">
-          <div><strong>Strengths:</strong> ${escapeHtml(strengths.bestMarket)} market, ${escapeHtml(strengths.bestOddsRange)} odds, ${escapeHtml(strengths.bestSlipType)} slips</div>
-          <div><strong>Weaknesses:</strong> ${escapeHtml(weaknesses.worstMarket)} market, ${weaknesses.overLegging ? "Over-legging risk" : "Leg structure ok"}, ${weaknesses.highVariance ? "High variance" : "Controlled variance"}</div>
-          <div><strong>Consistency:</strong> Last 25 ROI ${fmtPct(trends.last25ROI)} • Avg drawdown ${fmtPct(detail.drawdownStats.avgDrawdownPct)} • Avg recovery ${detail.drawdownStats.avgRecovery.toFixed(1)} slips</div>
-          <div><strong>Discipline:</strong> Longest losing streak ${detail.losingStreaks.longest} • Avg losing streak ${detail.losingStreaks.average.toFixed(1)}</div>
-          <div><strong>Confidence:</strong> Calibration ${Math.round(detail.confidenceAccuracy * 100)}%</div>
+        <div class="profile-section">
+          <div class="profile-section-title">Player Props</div>
+          <div class="profile-stats">
+            <div class="profile-stat"><div class="k">Player Prop Hit Rate</div><div class="v mono">${fmtPct(props.hitRate)}</div></div>
+            <div class="profile-stat"><div class="k">Total Props Tracked</div><div class="v mono">${props.totalProps}</div></div>
+          </div>
         </div>
+        <div class="profile-section">
+          <div class="profile-section-title">Trend</div>
+          <div class="profile-stats">
+            <div class="profile-stat"><div class="k">Last 10 Slip ROI</div><div class="v mono">${fmtPct(trends.last10ROI)}</div></div>
+            <div class="profile-stat"><div class="k">Trend Label</div><div class="v ${trendLabel.cls}">${trendLabel.text}</div></div>
+          </div>
+          ${sparkline}
+        </div>
+        ${legacyDetails}
       </div>
     `;
   }
@@ -1717,7 +1784,7 @@
     }).join(" ");
     return `
       <div class="profile-chart">
-        <div class="muteline">Profit trend (last ${data.length} slips)</div>
+        <div class="muteline">Slip trend (last ${data.length} slips)</div>
         <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Profit trend sparkline">
           <polyline points="${coords}" fill="none" stroke="rgba(110,168,255,0.9)" stroke-width="2" stroke-linecap="round" />
         </svg>
@@ -1844,7 +1911,7 @@
       `Starting bankroll: <b class="mono">${fmtMoney(state.startingBankroll)}</b> → Current (tailed slips): <b class="mono">${fmtMoney(currentBankroll)}</b>`;
 
     renderBankrollChart(tailedDone, currentBankroll);
-    renderAnalystProfiles(done);
+    renderAnalystProfiles(done, state.slips);
   }
 
   function renderBankrollChart(done, endBankroll){
