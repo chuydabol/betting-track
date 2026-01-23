@@ -216,6 +216,17 @@
       padding: 12px;
       min-width: 0;
     }
+    .kpi-section{
+      display:grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .kpi-section-title{
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--muted2);
+    }
 
     .profile-grid{
       display:grid;
@@ -400,6 +411,20 @@
       color: rgba(255,255,255,0.65);
       margin-top: 2px;
     }
+    .checkline{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-height: 40px;
+      padding-top: 22px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .checkline input{
+      width: auto;
+      min-height: auto;
+    }
     .slip-row[data-expanded="true"] .slip-props{ display:flex; }
 
     /* Floating menu / bottom sheet */
@@ -554,6 +579,14 @@
             </div>
 
             <div class="col-3">
+              <label class="sr-only" for="tailed">I Tailed This Slip</label>
+              <label class="checkline" for="tailed">
+                <input id="tailed" type="checkbox" checked />
+                I Tailed This Slip
+              </label>
+            </div>
+
+            <div class="col-3" id="stakeWrap">
               <label for="stake">Stake ($)</label>
               <input id="stake" type="number" step="0.01" placeholder="50" min="0.01" inputmode="decimal" />
 
@@ -628,20 +661,24 @@
             <div class="col-6">
               <label for="bankroll">Starting Bankroll</label>
               <input id="bankroll" type="number" step="0.01" placeholder="1000" inputmode="decimal" />
+              <div class="muteline" id="bankrollLockNote"></div>
             </div>
           </div>
           <div class="row">
-            <div class="col-12">
-              <label for="kpiView">Earnings View</label>
-              <select id="kpiView">
-                <option value="overall">Overall KPIs</option>
-                <option value="creators">By creator category</option>
-              </select>
-              <div class="muteline">Switch to break down earnings by VIP, tryout, and own slips.</div>
+            <div class="col-6">
+              <label class="sr-only" for="resetBankroll">Reset Bankroll</label>
+              <button class="btn danger" id="resetBankroll" type="button">Reset Bankroll</button>
+              <div class="muteline">Clears tailed profit history and sets a new starting bankroll.</div>
             </div>
           </div>
-
-          <div class="kpis" id="kpis" role="status" aria-live="polite"></div>
+          <div class="kpi-section" role="status" aria-live="polite">
+            <div class="kpi-section-title">My Results (Tailed Slips Only)</div>
+            <div class="kpis" id="kpisPersonal"></div>
+          </div>
+          <div class="kpi-section" role="status" aria-live="polite">
+            <div class="kpi-section-title">Discord Results (All Slips, Flat Stake Simulation)</div>
+            <div class="kpis" id="kpisDiscord"></div>
+          </div>
           <div class="bankline" id="bankrollLine" role="status" aria-live="polite"></div>
           <div class="chart-wrap">
             <canvas id="bankrollChart" width="640" height="200"></canvas>
@@ -757,6 +794,7 @@
 <script>
 (() => {
   const STORAGE_KEY = "slip_tracker_multipliers_pro_v2";
+  const SIMULATED_STAKE = 100;
   const PRESET_ANALYSTS = [
     {id: "Jay", type: "VIP"},
     {id: "Ochan", type: "VIP"},
@@ -929,6 +967,15 @@
     document.body.dataset.uiMode = uiMode;
   }
 
+  function syncTailedInput(tailed){
+    const stakeWrap = $("stakeWrap");
+    const stakeInput = $("stake");
+    if(!stakeWrap || !stakeInput) return;
+    stakeWrap.style.display = tailed ? "" : "none";
+    stakeInput.disabled = !tailed;
+    if(!tailed) stakeInput.value = "";
+  }
+
   function load(){
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -941,40 +988,45 @@
       state.analystPrimary = parsed.analystPrimary || "";
       state.analystCompare = parsed.analystCompare || "";
       state.slips = Array.isArray(parsed.slips) ? parsed.slips : [];
-      state.slips = state.slips.map(s => ({
-        id: s.id || genId(),
-        createdAt: s.createdAt || Date.now(),
-        date: s.date || "",
-        status: s.status === "DONE" ? "DONE" : "PENDING",
-        result: s.result || "",
-        app: s.app || "",
-        league: s.league || "",
-        oddsType: s.oddsType || "",
-        creator: resolveCreator(s.creator, s.analystId),
-        analystId: s.analystId || s.creator || "CHUY",
-        analystType: s.analystType || deriveAnalystType(s.analystId || s.creator || "CHUY"),
-        slipType: s.slipType || ((Array.isArray(s.players) ? s.players.length : 0) > 1 ? "Parlay" : "Straight"),
-        legsCount: num(s.legsCount) || ((Array.isArray(s.players) ? s.players.length : 0) || 1),
-        marketType: s.marketType || "",
-        confidence: (Number.isFinite(Number(s.confidence)) ? num(s.confidence) : null),
-        stake: num(s.stake),
-        mult: num(s.mult),
-        oddsDecimal: num(s.oddsDecimal) || num(s.mult),
-        paidMult: (s.paidMult === undefined ? "" : s.paidMult),
-        tag: s.tag || "",
-        tags: Array.isArray(s.tags) ? s.tags : parseTags(s.tags || s.tag || ""),
-        group: s.group || "",
-        slipId: s.slipId || "",
-        players: Array.isArray(s.players)
-          ? s.players.map(player => ({
-            name: player.name || "",
-            line: player.line || "",
-            ou: player.ou || "",
-            final: player.final || "",
-            outcome: player.outcome || ""
-          }))
-          : []
-      }));
+      state.slips = state.slips.map(s => {
+        const tailed = s.tailed === undefined ? num(s.stake) > 0 : !!s.tailed;
+        const stake = tailed ? num(s.stake) : null;
+        return {
+          id: s.id || genId(),
+          createdAt: s.createdAt || Date.now(),
+          date: s.date || "",
+          status: s.status === "DONE" ? "DONE" : "PENDING",
+          result: s.result || "",
+          app: s.app || "",
+          league: s.league || "",
+          oddsType: s.oddsType || "",
+          creator: resolveCreator(s.creator, s.analystId),
+          analystId: s.analystId || s.creator || "CHUY",
+          analystType: s.analystType || deriveAnalystType(s.analystId || s.creator || "CHUY"),
+          slipType: s.slipType || ((Array.isArray(s.players) ? s.players.length : 0) > 1 ? "Parlay" : "Straight"),
+          legsCount: num(s.legsCount) || ((Array.isArray(s.players) ? s.players.length : 0) || 1),
+          marketType: s.marketType || "",
+          confidence: (Number.isFinite(Number(s.confidence)) ? num(s.confidence) : null),
+          tailed,
+          stake,
+          mult: num(s.mult),
+          oddsDecimal: num(s.oddsDecimal) || num(s.mult),
+          paidMult: (s.paidMult === undefined ? "" : s.paidMult),
+          tag: s.tag || "",
+          tags: Array.isArray(s.tags) ? s.tags : parseTags(s.tags || s.tag || ""),
+          group: s.group || "",
+          slipId: s.slipId || "",
+          players: Array.isArray(s.players)
+            ? s.players.map(player => ({
+              name: player.name || "",
+              line: player.line || "",
+              ou: player.ou || "",
+              final: player.final || "",
+              outcome: player.outcome || ""
+            }))
+            : []
+        };
+      });
     }catch{}
   }
 
@@ -996,6 +1048,24 @@
     const p = payoutFor(s);
     if(p === null) return null;
     return p - num(s.stake);
+  }
+
+  function tailedProfitFor(s){
+    if(!s.tailed || s.status !== "DONE") return 0;
+    const stake = num(s.stake);
+    if(stake <= 0) return 0;
+    const odds = num(s.oddsDecimal) || num(s.mult);
+    if(s.result === "W") return (stake * odds) - stake;
+    if(s.result === "L") return -stake;
+    return 0;
+  }
+
+  function simulatedProfitFor(s){
+    if(s.status !== "DONE") return 0;
+    const odds = num(s.oddsDecimal) || num(s.mult);
+    if(s.result === "W") return (SIMULATED_STAKE * odds) - SIMULATED_STAKE;
+    if(s.result === "L") return -SIMULATED_STAKE;
+    return 0;
   }
 
   function deriveAnalystType(analystId){
@@ -1667,9 +1737,19 @@
     refreshDatalists();
     refreshAnalystSelector();
 
-    $("bankroll").value = String(state.startingBankroll || "");
+    const bankrollInput = $("bankroll");
+    const bankrollLockNote = $("bankrollLockNote");
+    const hasTailedSlips = state.slips.some(s => s.tailed);
+    if(bankrollInput){
+      bankrollInput.value = String(state.startingBankroll || "");
+      bankrollInput.disabled = hasTailedSlips;
+    }
+    if(bankrollLockNote){
+      bankrollLockNote.textContent = hasTailedSlips
+        ? "Locked once tailed slips exist. Use Reset Bankroll to change."
+        : "Editable until you tail a slip.";
+    }
     $("autosave").value = state.autosave;
-    $("kpiView").value = state.kpiView || "overall";
 
     const shown = applyFilters(state.slips);
 
@@ -1703,6 +1783,7 @@
             <div class="slip-cell"><div class="k">Legs</div><div class="v mono">${num(s.legsCount) || players.length || 1}</div></div>
             <div class="slip-cell"><div class="k">Odds</div><div class="v mono">${odds}x</div></div>
             <div class="slip-cell"><div class="k">Result</div><div class="v">${statusPill(s)}</div></div>
+            <div class="slip-cell"><div class="k">Tailed</div><div class="v">${s.tailed ? "Yes" : "No"}</div></div>
             <div class="slip-cell"><div class="k">Analyst</div><div class="v">${escapeHtml(analystLabel || "—")}</div></div>
           </div>
           <button class="kebab" title="Actions" data-kebab="${s.id}">⋯</button>
@@ -1727,54 +1808,42 @@
     }
 
     // KPIs
-    const view = $("viewDate").value || todayISO();
-    const dayDone = state.slips.filter(s => s.date === view && s.status === "DONE");
-    const dayStaked = dayDone.reduce((a,s)=>a+num(s.stake),0);
-    const dayPaid = dayDone.reduce((a,s)=>a + (payoutFor(s) ?? 0),0);
-    const dayNet = dayPaid - dayStaked;
-    const dayRoi = dayStaked > 0 ? dayNet/dayStaked : 0;
-
     const done = state.slips.filter(s => s.status === "DONE");
-    const {staked: allStaked, paid: allPaid, net: allNet, roi: allRoi} = statsForDone(done);
-    const doneCount = done.length;
-    const wins = done.filter(s => s.result === "W").length;
-    const winRate = doneCount > 0 ? wins / doneCount : 0;
-    const avgStake = doneCount > 0 ? allStaked / doneCount : 0;
-    const avgMult = doneCount > 0 ? done.reduce((a,s)=>a+num(s.mult),0) / doneCount : 0;
+    const tailedDone = done.filter(s => s.tailed);
+    const tailedProfit = tailedDone.reduce((a,s) => a + tailedProfitFor(s), 0);
+    const tailedStaked = tailedDone.reduce((a,s) => a + num(s.stake), 0);
+    const tailedRoi = tailedStaked > 0 ? tailedProfit / tailedStaked : 0;
+    const currentBankroll = num(state.startingBankroll) + tailedProfit;
 
-    const pendingCount = state.slips.filter(s=>s.status==="PENDING").length;
-    const endBankroll = num(state.startingBankroll) + allNet;
+    const discordProfit = done.reduce((a,s) => a + simulatedProfitFor(s), 0);
+    const discordStaked = done.length * SIMULATED_STAKE;
+    const discordRoi = discordStaked > 0 ? discordProfit / discordStaked : 0;
+    const discordWins = done.filter(s => s.result === "W").length;
+    const discordLosses = done.filter(s => s.result === "L").length;
+    const discordHitRate = (discordWins + discordLosses) > 0
+      ? discordWins / (discordWins + discordLosses)
+      : 0;
 
-    const kpis = $("kpis");
-    kpis.innerHTML = "";
-    if(state.kpiView === "creators"){
-      const creatorGroups = [
-        {label: "VIP Analysts", creators: ["JAY","ENVIXITY","OCHAN"]},
-        {label: "Tryout Analysts", creators: ["FLUID","POPS"]},
-        {label: "Own Slips", creators: ["CHUY","COMBINED"]}
-      ];
-
-      for(const group of creatorGroups){
-        const groupDone = done.filter(s => group.creators.includes(String(s.creator || "").toUpperCase()));
-        const stats = statsForDone(groupDone);
-        kpis.appendChild(kpiCard(`${group.label} Net`, moneySpan(stats.net)));
-        kpis.appendChild(kpiCard(`${group.label} ROI`, `<span class="mono">${fmtPct(stats.roi)}</span>`));
-      }
-    }else{
-      kpis.appendChild(kpiCard(`Selected Day Net (${view})`, moneySpan(dayNet)));
-      kpis.appendChild(kpiCard(`Selected Day ROI`, `<span class="mono">${fmtPct(dayRoi)}</span>`));
-      kpis.appendChild(kpiCard(`All-Time Net`, moneySpan(allNet)));
-      kpis.appendChild(kpiCard(`All-Time ROI`, `<span class="mono">${fmtPct(allRoi)}</span>`));
-      kpis.appendChild(kpiCard(`Win Rate`, `<span class="mono">${fmtPct(winRate)}</span>`));
-      kpis.appendChild(kpiCard(`Avg Stake`, `<span class="mono">${fmtMoney(avgStake)}</span>`));
-      kpis.appendChild(kpiCard(`Avg Multiplier`, `<span class="mono">${avgMult.toFixed(2)}x</span>`));
-      kpis.appendChild(kpiCard(`Pending Slips`, `<span class="mono">${pendingCount}</span>`));
+    const kpisPersonal = $("kpisPersonal");
+    const kpisDiscord = $("kpisDiscord");
+    if(kpisPersonal){
+      kpisPersonal.innerHTML = "";
+      kpisPersonal.appendChild(kpiCard("ROI", `<span class="mono">${fmtPct(tailedRoi)}</span>`));
+      kpisPersonal.appendChild(kpiCard("Total Profit", moneySpan(tailedProfit)));
+      kpisPersonal.appendChild(kpiCard("Total Staked", `<span class="mono">${fmtMoney(tailedStaked)}</span>`));
+      kpisPersonal.appendChild(kpiCard("Current Bankroll", `<span class="mono">${fmtMoney(currentBankroll)}</span>`));
+    }
+    if(kpisDiscord){
+      kpisDiscord.innerHTML = "";
+      kpisDiscord.appendChild(kpiCard("Simulated ROI", `<span class="mono">${fmtPct(discordRoi)}</span>`));
+      kpisDiscord.appendChild(kpiCard("Hit Rate", `<span class="mono">${fmtPct(discordHitRate)}</span>`));
+      kpisDiscord.appendChild(kpiCard("Total Slips Tracked", `<span class="mono">${done.length}</span>`));
     }
 
     $("bankrollLine").innerHTML =
-      `Starting bankroll: <b class="mono">${fmtMoney(state.startingBankroll)}</b> → Current (finished slips): <b class="mono">${fmtMoney(endBankroll)}</b>`;
+      `Starting bankroll: <b class="mono">${fmtMoney(state.startingBankroll)}</b> → Current (tailed slips): <b class="mono">${fmtMoney(currentBankroll)}</b>`;
 
-    renderBankrollChart(done, endBankroll);
+    renderBankrollChart(tailedDone, currentBankroll);
     renderAnalystProfiles(done);
   }
 
@@ -1789,7 +1858,7 @@
     if(done.length === 0){
       ctx.fillStyle = "rgba(255,255,255,0.55)";
       ctx.font = "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-      ctx.fillText("No finished slips yet.", 12, 20);
+      ctx.fillText("No finished tailed slips yet.", 12, 20);
       return;
     }
 
@@ -1803,7 +1872,7 @@
     let bank = num(state.startingBankroll);
     points.push(bank);
     for(const s of sorted){
-      bank += plFor(s) ?? 0;
+      bank += tailedProfitFor(s);
       points.push(bank);
     }
 
@@ -1845,7 +1914,9 @@
     const app = $("app").value.trim();
     const league = $("league").value.trim();
     const oddsType = $("oddsType").value;
-    const stake = num($("stake").value);
+    const tailed = $("tailed").checked;
+    const stakeInput = $("stake").value;
+    const stake = tailed ? num(stakeInput) : null;
     const mult = num($("mult").value);
     const oddsDecimalInput = num($("oddsDecimal")?.value);
     const paidRaw = $("paid").value;
@@ -1866,7 +1937,7 @@
     const players = readPlayersFromForm();
     if(players === null) return null;
 
-    if(stake <= 0) return alert("Stake must be > 0"), null;
+    if(tailed && stake <= 0) return alert("Stake must be > 0 for tailed slips."), null;
     if(mult <= 0) return alert("Listed multiplier must be > 0"), null;
     const oddsDecimal = oddsDecimalInput > 0 ? oddsDecimalInput : mult;
     if(oddsDecimal <= 0) return alert("Odds (decimal) must be > 0"), null;
@@ -1885,6 +1956,7 @@
       legsCount: legsCount > 0 ? legsCount : Math.max(1, players.length),
       marketType,
       confidence: (confidence === null ? null : confidence),
+      tailed,
       stake, mult, oddsDecimal, paidMult, tag, tags, group, slipId, players
     };
   }
@@ -1910,6 +1982,8 @@
     setValue("legsCount", "");
     setValue("marketType", "");
     setValue("confidence", "");
+    if($("tailed")) $("tailed").checked = true;
+    syncTailedInput(true);
     syncAnalystType("Chuy");
     renderPlayers([]);
   }
@@ -1951,7 +2025,7 @@
   }
 
   function exportCsv(){
-    const cols = ["date","status","result","app","league","oddsType","creator","analystId","analystType","slipType","legsCount","marketType","confidence","tags","stake","mult","oddsDecimal","paidMult","payout","profitLoss","tag","group","slipId","players"];
+    const cols = ["date","status","result","app","league","oddsType","creator","analystId","analystType","slipType","legsCount","marketType","confidence","tags","tailed","stake","mult","oddsDecimal","paidMult","payout","profitLoss","tag","group","slipId","players"];
     const lines = [cols.join(",")];
     for(const s of state.slips){
       const p = payoutFor(s);
@@ -1963,6 +2037,7 @@
         s.date, s.status, s.result, s.app, s.league, s.oddsType, s.creator,
         s.analystId, s.analystType, s.slipType, s.legsCount, s.marketType, s.confidence,
         Array.isArray(s.tags) ? s.tags.join("|") : "",
+        s.tailed ? "true" : "false",
         s.stake, s.mult, s.oddsDecimal, (s.paidMult===""? "" : s.paidMult),
         (p===null? "" : p),
         (pl===null? "" : pl),
@@ -1991,40 +2066,45 @@
       if(Array.isArray(parsed.slips)) state.slips = parsed.slips;
 
       // normalize
-      state.slips = state.slips.map(s => ({
-        id: s.id || genId(),
-        createdAt: s.createdAt || Date.now(),
-        date: s.date || "",
-        status: s.status === "DONE" ? "DONE" : "PENDING",
-        result: s.result || "",
-        app: s.app || "",
-        league: s.league || "",
-        oddsType: s.oddsType || "",
-        creator: resolveCreator(s.creator, s.analystId),
-        analystId: s.analystId || s.creator || "CHUY",
-        analystType: s.analystType || deriveAnalystType(s.analystId || s.creator || "CHUY"),
-        slipType: s.slipType || ((Array.isArray(s.players) ? s.players.length : 0) > 1 ? "Parlay" : "Straight"),
-        legsCount: num(s.legsCount) || ((Array.isArray(s.players) ? s.players.length : 0) || 1),
-        marketType: s.marketType || "",
-        confidence: (Number.isFinite(Number(s.confidence)) ? num(s.confidence) : null),
-        stake: num(s.stake),
-        mult: num(s.mult),
-        oddsDecimal: num(s.oddsDecimal) || num(s.mult),
-        paidMult: (s.paidMult === undefined ? "" : s.paidMult),
-        tag: s.tag || "",
-        tags: Array.isArray(s.tags) ? s.tags : parseTags(s.tags || s.tag || ""),
-        group: s.group || "",
-        slipId: s.slipId || "",
-        players: Array.isArray(s.players)
-          ? s.players.map(player => ({
-            name: player.name || "",
-            line: player.line || "",
-            ou: player.ou || "",
-            final: player.final || "",
-            outcome: player.outcome || ""
-          }))
-          : ((s.notes && !s.players) ? [{name: s.notes, line: "", ou: "", final: "", outcome: ""}] : [])
-      }));
+      state.slips = state.slips.map(s => {
+        const tailed = s.tailed === undefined ? num(s.stake) > 0 : !!s.tailed;
+        const stake = tailed ? num(s.stake) : null;
+        return {
+          id: s.id || genId(),
+          createdAt: s.createdAt || Date.now(),
+          date: s.date || "",
+          status: s.status === "DONE" ? "DONE" : "PENDING",
+          result: s.result || "",
+          app: s.app || "",
+          league: s.league || "",
+          oddsType: s.oddsType || "",
+          creator: resolveCreator(s.creator, s.analystId),
+          analystId: s.analystId || s.creator || "CHUY",
+          analystType: s.analystType || deriveAnalystType(s.analystId || s.creator || "CHUY"),
+          slipType: s.slipType || ((Array.isArray(s.players) ? s.players.length : 0) > 1 ? "Parlay" : "Straight"),
+          legsCount: num(s.legsCount) || ((Array.isArray(s.players) ? s.players.length : 0) || 1),
+          marketType: s.marketType || "",
+          confidence: (Number.isFinite(Number(s.confidence)) ? num(s.confidence) : null),
+          tailed,
+          stake,
+          mult: num(s.mult),
+          oddsDecimal: num(s.oddsDecimal) || num(s.mult),
+          paidMult: (s.paidMult === undefined ? "" : s.paidMult),
+          tag: s.tag || "",
+          tags: Array.isArray(s.tags) ? s.tags : parseTags(s.tags || s.tag || ""),
+          group: s.group || "",
+          slipId: s.slipId || "",
+          players: Array.isArray(s.players)
+            ? s.players.map(player => ({
+              name: player.name || "",
+              line: player.line || "",
+              ou: player.ou || "",
+              final: player.final || "",
+              outcome: player.outcome || ""
+            }))
+            : ((s.notes && !s.players) ? [{name: s.notes, line: "", ou: "", final: "", outcome: ""}] : [])
+        };
+      });
 
       save();
       render();
@@ -2050,7 +2130,8 @@
     if(!s) return;
 
     activeSlipId = slipId;
-    menuTitle.textContent = `Slip • ${s.date} • ${fmtMoney(s.stake)} @ ${num(s.mult).toFixed(2)}x`;
+    const stakeLabel = s.tailed ? fmtMoney(s.stake) : "Not tailed";
+    menuTitle.textContent = `Slip • ${s.date} • ${stakeLabel} @ ${num(s.mult).toFixed(2)}x`;
     menuPaid.value = (s.paidMult === "" || s.paidMult === null || s.paidMult === undefined) ? "" : String(s.paidMult);
 
     // Mobile: bottom sheet handled by CSS, just show
@@ -2105,6 +2186,21 @@
     if(addBtn) addBtn.textContent = isEditing ? "Save Changes" : "Save Slip";
   }
 
+  function resetBankroll(){
+    if(!confirm("Reset bankroll? This will clear tailed profit history and cannot be undone.")) return;
+    const nextValue = prompt("Enter new starting bankroll", String(state.startingBankroll || 0));
+    if(nextValue === null) return;
+    const parsed = Number(nextValue);
+    if(!Number.isFinite(parsed) || parsed < 0){
+      alert("Enter a valid starting bankroll amount.");
+      return;
+    }
+    state.startingBankroll = parsed;
+    state.slips = state.slips.map(s => (s.tailed ? {...s, tailed: false, stake: null} : s));
+    save();
+    render();
+  }
+
   function applySlipToForm(slip){
     const setValue = (id, value) => {
       const el = $(id);
@@ -2129,8 +2225,10 @@
     setValue("legsCount", slip.legsCount || "");
     setValue("marketType", slip.marketType || "");
     setValue("confidence", slip.confidence ?? "");
+    if($("tailed")) $("tailed").checked = !!slip.tailed;
     syncAnalystType(slip.analystId || DEFAULT_ANALYST_ID);
     $("result").disabled = ($("status").value !== "DONE");
+    syncTailedInput(!!slip.tailed);
     renderPlayers(Array.isArray(slip.players) ? slip.players : []);
   }
 
@@ -2198,18 +2296,16 @@
   });
 
   $("bankroll").addEventListener("input", (e) => {
+    if(e.target.disabled) return;
     state.startingBankroll = num(e.target.value);
     save(); render();
   });
 
+  $("resetBankroll").addEventListener("click", resetBankroll);
+
   $("autosave").addEventListener("change", (e) => {
     state.autosave = e.target.value;
     if(state.autosave === "on") save();
-  });
-
-  $("kpiView").addEventListener("change", (e) => {
-    state.kpiView = e.target.value === "creators" ? "creators" : "overall";
-    save(); render();
   });
 
   $("analystPrimary").addEventListener("change", (e) => {
@@ -2244,6 +2340,10 @@
   $("status").addEventListener("change", () => {
     const done = $("status").value === "DONE";
     $("result").disabled = !done;
+  });
+
+  $("tailed").addEventListener("change", (e) => {
+    syncTailedInput(e.target.checked);
   });
 
   const creatorField = $("creator");
@@ -2305,6 +2405,10 @@
   syncAnalystType(DEFAULT_ANALYST_ID);
   setEditingBanner(false);
   renderPlayers([]);
+  if($("tailed")){
+    $("tailed").checked = true;
+    syncTailedInput(true);
+  }
   render();
 
 })();
