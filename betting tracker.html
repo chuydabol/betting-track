@@ -179,12 +179,11 @@
     .col-3{ grid-column: span 3; }
     .col-4{ grid-column: span 4; }
     .col-6{ grid-column: span 6; }
-    .col-8{ grid-column: span 8; }
     .col-12{ grid-column: span 12; }
 
     @media (max-width: 980px){
       .row{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
-      .col-3,.col-4,.col-6,.col-8{ grid-column: span 6; }
+      .col-3,.col-4,.col-6{ grid-column: span 6; }
     }
 
     .section-title{
@@ -284,55 +283,6 @@
     .neg{ color: var(--bad); }
     .neu{ color: var(--warn); }
     .bankline{ margin-top: 10px; color: var(--muted); font-size: 12px; }
-    .stake-helper{
-      margin-top: 8px;
-      padding: 10px;
-      border-radius: 12px;
-      border: 1px dashed rgba(110,168,255,0.35);
-      background: rgba(110,168,255,0.08);
-      display: grid;
-      gap: 8px;
-    }
-    .stake-helper .helper-grid{
-      display:grid;
-      gap:10px;
-      grid-template-columns: repeat(12, minmax(0, 1fr));
-      align-items:end;
-    }
-    .stake-helper .helper-grid > .col-4{ grid-column: span 4; }
-    .stake-helper .helper-grid > .col-8{ grid-column: span 8; }
-    .stake-suggestion{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.04);
-      min-height: 40px;
-    }
-    .snapshot-list{
-      display:grid;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    .snapshot-item{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.04);
-    }
-    .snapshot-meta{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-    }
-    .snapshot-meta .note{ color: var(--muted2); font-size: 12px; }
     .chart-wrap{
       margin-top: 12px;
       padding: 10px;
@@ -649,24 +599,6 @@
             <input id="stake" type="number" step="0.01" placeholder="50" min="0.01" inputmode="decimal" />
 
           </div>
-          <div class="col-12">
-            <div class="stake-helper">
-              <div class="helper-grid">
-                <div class="col-4">
-                  <label for="stakePercent">Bankroll %</label>
-                  <input id="stakePercent" type="number" step="0.1" min="0" placeholder="5" inputmode="decimal" />
-                </div>
-                <div class="col-8">
-                  <label>Suggested Stake</label>
-                  <div class="stake-suggestion">
-                    <span id="stakeSuggestion" class="mono">—</span>
-                    <button class="btn" id="applyStake" type="button">Use Suggestion</button>
-                  </div>
-                </div>
-              </div>
-              <div class="muteline" id="stakeBaseLine"></div>
-            </div>
-          </div>
           <div class="col-3">
             <label for="mult">Listed Multiplier (x)</label>
             <input id="mult" type="number" step="0.01" placeholder="2.0" min="0.01" inputmode="decimal" />
@@ -781,24 +713,6 @@
               <input id="bankroll" type="number" step="0.01" placeholder="1000" inputmode="decimal" />
             </div>
           </div>
-          <div class="row">
-            <div class="col-6">
-              <label for="bankrollSnapshotDate">Bankroll Snapshot Date</label>
-              <input id="bankrollSnapshotDate" type="date" />
-            </div>
-            <div class="col-6">
-              <label for="bankrollSnapshotAmount">Snapshot Bankroll ($)</label>
-              <input id="bankrollSnapshotAmount" type="number" step="0.01" min="0" placeholder="150" inputmode="decimal" />
-            </div>
-            <div class="col-12">
-              <label for="bankrollSnapshotNote">Snapshot Note (optional)</label>
-              <input id="bankrollSnapshotNote" type="text" placeholder="Deposit, payout, etc." />
-            </div>
-            <div class="col-12" style="display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="btn" id="addBankrollSnapshot" type="button">Add Snapshot</button>
-            </div>
-          </div>
-          <div class="snapshot-list" id="bankrollSnapshots"></div>
           <div class="row">
             <div class="col-12">
               <label for="kpiView">Earnings View</label>
@@ -942,8 +856,6 @@
 
   let state = {
     startingBankroll: 0,
-    bankrollSnapshots: [],
-    stakePercent: 5,
     autosave: "on",
     logView: "auto", // auto | table | cards
     kpiView: "overall", // overall | creators
@@ -993,16 +905,6 @@
     const tags = Array.isArray(slip.tags) ? slip.tags : parseTags(slip.tags);
     if(tags.length) return tags;
     return parseTags(slip.tag);
-  };
-
-  const normalizeBankrollSnapshots = (snapshots) => {
-    if(!Array.isArray(snapshots)) return [];
-    return snapshots.map(snapshot => ({
-      id: snapshot.id || genId(),
-      date: snapshot.date || "",
-      amount: num(snapshot.amount),
-      note: snapshot.note || ""
-    })).filter(snapshot => snapshot.date && Number.isFinite(snapshot.amount));
   };
 
   const getPresetAnalystType = (analystId) => {
@@ -1116,8 +1018,6 @@
       const parsed = JSON.parse(raw);
       if(!parsed || typeof parsed !== "object") return;
       state.startingBankroll = num(parsed.startingBankroll);
-      state.bankrollSnapshots = normalizeBankrollSnapshots(parsed.bankrollSnapshots);
-      state.stakePercent = Number.isFinite(Number(parsed.stakePercent)) ? num(parsed.stakePercent) : 5;
       state.autosave = parsed.autosave === "off" ? "off" : "on";
       state.logView = (parsed.logView === "table" || parsed.logView === "cards") ? parsed.logView : "auto";
       state.kpiView = parsed.kpiView === "creators" ? "creators" : "overall";
@@ -1160,89 +1060,6 @@
     const p = payoutFor(s);
     if(p === null) return null;
     return p - num(s.stake);
-  }
-
-  function sortedSnapshots(){
-    return normalizeBankrollSnapshots(state.bankrollSnapshots)
-      .sort((a,b) => String(a.date).localeCompare(String(b.date)));
-  }
-
-  function getSnapshotForDate(date){
-    const snapshots = sortedSnapshots();
-    let latest = null;
-    for(const snapshot of snapshots){
-      if(snapshot.date <= date) latest = snapshot;
-    }
-    return latest;
-  }
-
-  function calcBankrollAt(date){
-    const snapshot = getSnapshotForDate(date);
-    const base = snapshot ? num(snapshot.amount) : num(state.startingBankroll);
-    const fromDate = snapshot ? snapshot.date : null;
-    const done = state.slips.filter(s => s.status === "DONE");
-    const net = done.reduce((sum, slip) => {
-      if(!slip.date) return sum;
-      if(fromDate && slip.date < fromDate) return sum;
-      if(slip.date > date) return sum;
-      return sum + (plFor(slip) ?? 0);
-    }, 0);
-    return base + net;
-  }
-
-  function formatSnapshotLabel(snapshot){
-    if(!snapshot) return `Starting bankroll: <b class="mono">${fmtMoney(state.startingBankroll)}</b>`;
-    const note = snapshot.note ? ` • ${escapeHtml(snapshot.note)}` : "";
-    return `Snapshot ${snapshot.date}${note}: <b class="mono">${fmtMoney(snapshot.amount)}</b>`;
-  }
-
-  function renderBankrollSnapshots(){
-    const list = $("bankrollSnapshots");
-    if(!list) return;
-    const snapshots = sortedSnapshots().sort((a,b) => String(b.date).localeCompare(String(a.date)));
-    if(snapshots.length === 0){
-      list.innerHTML = `<div class="muteline">No bankroll snapshots yet. Add one when your bankroll changes outside of tracked slips.</div>`;
-      return;
-    }
-    list.innerHTML = snapshots.map(snapshot => `
-      <div class="snapshot-item">
-        <div class="snapshot-meta">
-          <div><strong>${snapshot.date}</strong> • <span class="mono">${fmtMoney(snapshot.amount)}</span></div>
-          <div class="note">${escapeHtml(snapshot.note || "No note")}</div>
-        </div>
-        <button class="btn ghost" type="button" data-remove-snapshot="${snapshot.id}">Remove</button>
-      </div>
-    `).join("");
-  }
-
-  function renderStakeHelper(viewDate){
-    const percentInput = $("stakePercent");
-    const suggestion = $("stakeSuggestion");
-    const baseLine = $("stakeBaseLine");
-    if(!percentInput || !suggestion || !baseLine) return;
-    percentInput.value = String(state.stakePercent ?? 5);
-    const bankrollAtView = calcBankrollAt(viewDate);
-    const percent = clamp(num(state.stakePercent), 0, 100);
-    const stakeValue = bankrollAtView * (percent / 100);
-    suggestion.textContent = Number.isFinite(stakeValue) ? fmtMoney(stakeValue) : "—";
-    const snapshot = getSnapshotForDate(viewDate);
-    baseLine.innerHTML = `Stake helper uses ${formatSnapshotLabel(snapshot)} and finished slips through <span class="mono">${viewDate}</span>.`;
-  }
-
-  function addBankrollSnapshot(){
-    const date = $("bankrollSnapshotDate")?.value || "";
-    const amountValue = $("bankrollSnapshotAmount")?.value || "";
-    const note = $("bankrollSnapshotNote")?.value.trim() || "";
-    const amount = num(amountValue);
-    if(!date) return alert("Snapshot date is required.");
-    if(!Number.isFinite(amount) || amount < 0) return alert("Snapshot bankroll must be 0 or higher.");
-    state.bankrollSnapshots = normalizeBankrollSnapshots([
-      ...state.bankrollSnapshots,
-      {id: genId(), date, amount, note}
-    ]);
-    if($("bankrollSnapshotAmount")) $("bankrollSnapshotAmount").value = "";
-    if($("bankrollSnapshotNote")) $("bankrollSnapshotNote").value = "";
-    save(); render();
   }
 
   function deriveAnalystType(analystId){
@@ -1922,14 +1739,6 @@
     $("autosave").value = state.autosave;
     $("logView").value = state.logView || "auto";
     $("kpiView").value = state.kpiView || "overall";
-    const viewDateInput = $("viewDate");
-    if(viewDateInput && !viewDateInput.value){
-      viewDateInput.value = todayISO();
-    }
-    const snapshotDateInput = $("bankrollSnapshotDate");
-    if(snapshotDateInput && !snapshotDateInput.value){
-      snapshotDateInput.value = viewDateInput ? viewDateInput.value : todayISO();
-    }
 
     const shown = applyFilters(state.slips);
 
@@ -2035,7 +1844,6 @@
     const dayRoi = dayStaked > 0 ? dayNet/dayStaked : 0;
 
     const done = state.slips.filter(s => s.status === "DONE");
-    const doneThroughView = done.filter(s => !s.date || s.date <= view);
     const {staked: allStaked, paid: allPaid, net: allNet, roi: allRoi} = statsForDone(done);
     const doneCount = done.length;
     const wins = done.filter(s => s.result === "W").length;
@@ -2044,7 +1852,7 @@
     const avgMult = doneCount > 0 ? done.reduce((a,s)=>a+num(s.mult),0) / doneCount : 0;
 
     const pendingCount = state.slips.filter(s=>s.status==="PENDING").length;
-    const endBankroll = calcBankrollAt(view);
+    const endBankroll = num(state.startingBankroll) + allNet;
 
     const kpis = $("kpis");
     kpis.innerHTML = "";
@@ -2072,13 +1880,10 @@
       kpis.appendChild(kpiCard(`Pending Slips`, `<span class="mono">${pendingCount}</span>`));
     }
 
-    const snapshot = getSnapshotForDate(view);
     $("bankrollLine").innerHTML =
-      `${formatSnapshotLabel(snapshot)} → Current (finished slips): <b class="mono">${fmtMoney(endBankroll)}</b>`;
+      `Starting bankroll: <b class="mono">${fmtMoney(state.startingBankroll)}</b> → Current (finished slips): <b class="mono">${fmtMoney(endBankroll)}</b>`;
 
-    renderBankrollChart(doneThroughView, endBankroll);
-    renderBankrollSnapshots();
-    renderStakeHelper(view);
+    renderBankrollChart(done, endBankroll);
     renderAnalystProfiles(done);
   }
 
@@ -2103,26 +1908,12 @@
       return (a.createdAt||0) - (b.createdAt||0);
     });
 
-    const lastDate = sorted[sorted.length - 1]?.date || todayISO();
-    const snapshot = getSnapshotForDate(lastDate);
-    const startingBank = snapshot ? num(snapshot.amount) : num(state.startingBankroll);
-    const filtered = snapshot
-      ? sorted.filter(s => s.date && s.date >= snapshot.date)
-      : sorted;
-
     const points = [];
-    let bank = startingBank;
+    let bank = num(state.startingBankroll);
     points.push(bank);
-    for(const s of filtered){
+    for(const s of sorted){
       bank += plFor(s) ?? 0;
       points.push(bank);
-    }
-
-    if(points.length <= 1){
-      ctx.fillStyle = "rgba(255,255,255,0.55)";
-      ctx.font = "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-      ctx.fillText("No finished slips after the latest snapshot.", 12, 20);
-      return;
     }
 
     const minVal = Math.min(...points);
@@ -2248,8 +2039,6 @@
       version: 2,
       exportedAt: new Date().toISOString(),
       startingBankroll: state.startingBankroll,
-      bankrollSnapshots: state.bankrollSnapshots,
-      stakePercent: state.stakePercent,
       autosave: state.autosave,
       logView: state.logView,
       kpiView: state.kpiView,
@@ -2293,8 +2082,6 @@
       const parsed = JSON.parse(text);
 
       if(parsed.startingBankroll !== undefined) state.startingBankroll = num(parsed.startingBankroll);
-      state.bankrollSnapshots = normalizeBankrollSnapshots(parsed.bankrollSnapshots);
-      state.stakePercent = Number.isFinite(Number(parsed.stakePercent)) ? num(parsed.stakePercent) : 5;
       state.autosave = parsed.autosave === "off" ? "off" : "on";
       state.logView = (parsed.logView === "table" || parsed.logView === "cards") ? parsed.logView : "auto";
       state.kpiView = parsed.kpiView === "creators" ? "creators" : "overall";
@@ -2525,34 +2312,9 @@
     e.target.value = "";
   });
 
-  $("addBankrollSnapshot").addEventListener("click", addBankrollSnapshot);
-
-  $("bankrollSnapshots").addEventListener("click", (e) => {
-    const target = e.target.closest("[data-remove-snapshot]");
-    if(!target) return;
-    const id = target.getAttribute("data-remove-snapshot");
-    state.bankrollSnapshots = normalizeBankrollSnapshots(
-      state.bankrollSnapshots.filter(snapshot => snapshot.id !== id)
-    );
-    save(); render();
-  });
-
   $("bankroll").addEventListener("input", (e) => {
     state.startingBankroll = num(e.target.value);
     save(); render();
-  });
-
-  $("stakePercent").addEventListener("input", (e) => {
-    state.stakePercent = num(e.target.value);
-    save(); render();
-  });
-
-  $("applyStake").addEventListener("click", () => {
-    const view = $("viewDate").value || todayISO();
-    const percent = clamp(num(state.stakePercent), 0, 100);
-    const stakeValue = calcBankrollAt(view) * (percent / 100);
-    if(!Number.isFinite(stakeValue)) return;
-    $("stake").value = stakeValue.toFixed(2);
   });
 
   $("autosave").addEventListener("change", (e) => {
