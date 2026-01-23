@@ -198,6 +198,61 @@
       padding: 12px;
       min-width: 0;
     }
+
+    .profile-grid{
+      display:grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+    .profile-card{
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(255,255,255,0.04);
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      min-width: 0;
+    }
+    .profile-card h3{
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: .2px;
+    }
+    .profile-meta{
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .profile-stats{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .profile-stat{
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 10px;
+    }
+    .profile-stat .k{ font-size: 11px; color: var(--muted2); }
+    .profile-stat .v{ font-weight: 800; margin-top: 4px; }
+    .profile-list{
+      display:grid;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .profile-pill{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text);
+    }
     .kpi .k{ font-size: 12px; color: var(--muted); }
     .kpi .v{ margin-top: 6px; font-size: 18px; font-weight: 900; }
     .pos{ color: var(--good); }
@@ -497,6 +552,30 @@
               <option value="MIX">MIX (combined)</option>
             </select>
           </div>
+          <div class="col-3">
+            <label for="analystId">Analyst ID</label>
+            <input id="analystId" type="text" placeholder="Use a unique handle" />
+          </div>
+          <div class="col-3">
+            <label for="analystType">Analyst Type</label>
+            <select id="analystType">
+              <option value="VIP">VIP</option>
+              <option value="Tryout">Tryout</option>
+              <option value="Own">Own</option>
+            </select>
+          </div>
+          <div class="col-3">
+            <label for="slipType">Slip Type</label>
+            <select id="slipType">
+              <option value="">Auto</option>
+              <option value="Straight">Straight</option>
+              <option value="Parlay">Parlay</option>
+            </select>
+          </div>
+          <div class="col-3">
+            <label for="legsCount">Legs Count</label>
+            <input id="legsCount" type="number" min="1" step="1" placeholder="2" />
+          </div>
 
           <div class="col-3">
             <label for="stake">Stake ($)</label>
@@ -508,12 +587,35 @@
             <input id="mult" type="number" step="0.01" placeholder="2.0" min="0.01" inputmode="decimal" />
           </div>
           <div class="col-3">
+            <label for="oddsDecimal">Odds (Decimal)</label>
+            <input id="oddsDecimal" type="number" step="0.01" placeholder="1.91" min="0.01" inputmode="decimal" />
+          </div>
+          <div class="col-3">
             <label for="paid">Paid Multiplier (optional)</label>
             <input id="paid" type="number" step="0.01" placeholder="1.8" min="0" inputmode="decimal" />
           </div>
           <div class="col-3">
+            <label for="marketType">Market Type</label>
+            <input id="marketType" type="text" placeholder="player props" />
+          </div>
+          <div class="col-3">
+            <label for="confidence">Confidence (1–5)</label>
+            <select id="confidence">
+              <option value="">Not set</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+          <div class="col-3">
             <label for="tag">Tag (optional)</label>
             <input id="tag" type="text" list="tagList" placeholder="Parlay" />
+          </div>
+          <div class="col-3">
+            <label for="tags">Tags (comma-separated)</label>
+            <input id="tags" type="text" placeholder="live, alt, boosted" />
           </div>
           <div class="col-3">
             <label for="group">Group / Session (optional)</label>
@@ -637,6 +739,24 @@
 
         <div class="card">
           <div class="section-title">
+            <h2>Analyst Profiles</h2>
+            <span class="hint">finished slips only</span>
+          </div>
+          <div class="row">
+            <div class="col-6">
+              <label for="analystPrimary">Primary Analyst</label>
+              <select id="analystPrimary"></select>
+            </div>
+            <div class="col-6">
+              <label for="analystCompare">Compare To</label>
+              <select id="analystCompare"></select>
+            </div>
+          </div>
+          <div class="profile-grid" id="profileGrid"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">
             <h2>Filters</h2>
             <span class="hint">find slips fast</span>
           </div>
@@ -728,6 +848,8 @@
     autosave: "on",
     logView: "auto", // auto | table | cards
     kpiView: "overall", // overall | creators
+    analystPrimary: "",
+    analystCompare: "",
     slips: []
   };
 
@@ -747,11 +869,24 @@
   const fmtMoney = (n) => num(n).toLocaleString(undefined, {style:"currency", currency:"USD"});
   const fmtPct = (n) => (Number.isFinite(n) ? (n*100).toFixed(1)+"%" : "0.0%");
 
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
   const escapeHtml = (s) => String(s||"")
     .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
     .replaceAll('"',"&quot;").replaceAll("'","&#039;");
 
   const genId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+
+  const parseTags = (value) => {
+    if(!value) return [];
+    return value.split(",").map(tag => tag.trim()).filter(Boolean);
+  };
+
+  const normalizeTags = (slip) => {
+    const tags = Array.isArray(slip.tags) ? slip.tags : parseTags(slip.tags);
+    if(tags.length) return tags;
+    return parseTags(slip.tag);
+  };
 
   const playersContainer = () => $("players");
   const playerRowTemplate = (player = {}, index = 0) => `
@@ -824,6 +959,8 @@
       state.autosave = parsed.autosave === "off" ? "off" : "on";
       state.logView = (parsed.logView === "table" || parsed.logView === "cards") ? parsed.logView : "auto";
       state.kpiView = parsed.kpiView === "creators" ? "creators" : "overall";
+      state.analystPrimary = parsed.analystPrimary || "";
+      state.analystCompare = parsed.analystCompare || "";
       state.slips = Array.isArray(parsed.slips) ? parsed.slips : [];
     }catch{}
   }
@@ -846,6 +983,420 @@
     const p = payoutFor(s);
     if(p === null) return null;
     return p - num(s.stake);
+  }
+
+  const CREATOR_TYPES = {
+    VIP: ["JAY","ENVIXITY","OCHAN"],
+    Tryout: ["FLUID","POPS"],
+    Own: ["CHUY","MIX"]
+  };
+
+  function deriveAnalystType(analystId){
+    const key = String(analystId || "").toUpperCase();
+    if(CREATOR_TYPES.VIP.includes(key)) return "VIP";
+    if(CREATOR_TYPES.Tryout.includes(key)) return "Tryout";
+    return "Own";
+  }
+
+  function decimalToAmerican(decimalOdds){
+    const d = num(decimalOdds);
+    if(d <= 1) return null;
+    if(d >= 2) return Math.round((d - 1) * 100);
+    return Math.round(-100 / (d - 1));
+  }
+
+  function oddsRangeLabel(decimalOdds){
+    const american = decimalToAmerican(decimalOdds);
+    if(american === null) return "Unknown";
+    if(american >= -110 && american <= 100) return "-110 to +100";
+    if(american > 100 && american <= 200) return "+100 to +200";
+    if(american > 200) return "+200+";
+    return "< -110";
+  }
+
+  function unitProfitFor(slip){
+    if(slip.result === "Win") return slip.oddsDecimal - 1;
+    if(slip.result === "Loss") return -1;
+    return 0;
+  }
+
+  function asAnalystSlip(s){
+    const legsFromPlayers = Array.isArray(s.players) ? s.players.length : 0;
+    const oddsDecimal = num(s.oddsDecimal) || num(s.mult) || 0;
+    const legsCount = Math.max(1, num(s.legsCount) || legsFromPlayers || 1);
+    const slipType = s.slipType || (legsCount > 1 ? "Parlay" : "Straight");
+    const analystId = (s.analystId || s.creator || "Unknown").trim() || "Unknown";
+    const analystType = s.analystType || deriveAnalystType(analystId);
+    const confidence = Number.isFinite(Number(s.confidence)) ? num(s.confidence) : null;
+    return {
+      analystId,
+      analystType,
+      stake: num(s.stake),
+      oddsDecimal,
+      result: s.result === "W" ? "Win" : s.result === "L" ? "Loss" : "Push",
+      slipType,
+      legsCount,
+      marketType: s.marketType || s.league || "",
+      confidence: (confidence && confidence >= 1 && confidence <= 5) ? confidence : null,
+      tags: normalizeTags(s),
+      date: s.date || "",
+      league: s.league || "",
+      raw: s
+    };
+  }
+
+  function analyzeAnalystProfiles(doneSlips){
+    const normalized = doneSlips.map(asAnalystSlip);
+    const byAnalyst = new Map();
+    normalized.forEach(slip => {
+      if(!byAnalyst.has(slip.analystId)) byAnalyst.set(slip.analystId, []);
+      byAnalyst.get(slip.analystId).push(slip);
+    });
+
+    const profiles = {};
+    for(const [analystId, slips] of byAnalyst.entries()){
+      profiles[analystId] = buildAnalystProfile(analystId, slips);
+    }
+    return profiles;
+  }
+
+  function buildAnalystProfile(analystId, slips){
+    const ordered = slips.slice().sort((a,b) => {
+      const dateSort = (a.date||"").localeCompare(b.date||"");
+      if(dateSort !== 0) return dateSort;
+      return (a.raw.createdAt||0) - (b.raw.createdAt||0);
+    });
+    const totalProfit = slips.reduce((a,s) => a + (plFor(s.raw) ?? 0), 0);
+    const totalStaked = slips.reduce((a,s) => a + num(s.stake), 0);
+    const overallROI = totalStaked > 0 ? totalProfit / totalStaked : 0;
+
+    const wins = slips.filter(s => s.result === "Win").length;
+    const losses = slips.filter(s => s.result === "Loss").length;
+    const pushes = slips.filter(s => s.result === "Push").length;
+    const hitRate = (wins + losses) > 0 ? wins / (wins + losses) : 0;
+
+    const impliedAvg = slips.length
+      ? slips.reduce((a,s) => a + (s.oddsDecimal > 0 ? (1 / s.oddsDecimal) : 0), 0) / slips.length
+      : 0;
+    const edge = hitRate - impliedAvg;
+
+    const profitPerSlip = slips.length ? totalProfit / slips.length : 0;
+    const profitPer100 = totalStaked > 0 ? (totalProfit / totalStaked) * 100 : 0;
+    const avgOddsTaken = slips.length ? slips.reduce((a,s) => a + num(s.oddsDecimal), 0) / slips.length : 0;
+
+    const profitSeries = slips.map(s => plFor(s.raw) ?? 0);
+    const volatility = stdDev(profitSeries);
+    const volatilityBucket = volatility < 5 ? "Low" : volatility < 15 ? "Medium" : "High";
+
+    const drawdownStats = drawdownFor(ordered);
+    const losingStreaks = losingStreakStats(ordered);
+
+    const last10 = ordered.slice(-10);
+    const last25 = ordered.slice(-25);
+    const last10ROI = roiFor(last10);
+    const last25ROI = roiFor(last25);
+    const trendDirection = last10ROI > overallROI + 0.02 ? "Improving" :
+      last10ROI < overallROI - 0.02 ? "Declining" : "Flat";
+    const status = last10ROI > 0.15 ? "HOT" : last10ROI < -0.15 ? "COLD" : "NEUTRAL";
+
+    const oddsStats = oddsRangeStats(slips);
+    const bestOddsRange = pickBestBucket(oddsStats);
+
+    const slipTypeStats = groupBy(slips, s => s.slipType);
+    const roiBySlipType = calcRoiByGroup(slipTypeStats);
+    const hitRateBySlipType = hitRateByGroup(slipTypeStats);
+    const bestSlipType = pickBestBucket(roiBySlipType);
+
+    const legsStats = groupBy(slips, s => s.legsCount);
+    const roiByLegs = calcRoiByGroup(legsStats);
+    const hitRateByLegs = hitRateByGroup(legsStats);
+
+    const marketStats = groupBy(slips, s => s.marketType || "Unknown");
+    const roiByMarket = calcRoiByGroup(marketStats);
+    const hitRateByMarket = hitRateByGroup(marketStats);
+    const bestMarket = pickBestBucket(roiByMarket);
+
+    const sportStats = groupBy(slips, s => s.league || "Unknown");
+    const roiBySport = calcRoiByGroup(sportStats);
+    const hitRateBySport = hitRateByGroup(sportStats);
+
+    const tagStats = tagPerformance(slips);
+
+    const legPenalty = legInflationPenalty(slips);
+    const overLegging = legPenalty < -0.02;
+
+    const confidenceAccuracy = confidenceCalibration(slips);
+
+    const luckFactor = expectedVsActual(slips);
+
+    const compositeScore = analystCompositeScore({
+      roi: overallROI,
+      edge,
+      consistency: 1 - clamp(Math.abs(last10ROI - overallROI) / 0.2, 0, 1),
+      drawdown: drawdownStats.maxDrawdownPct,
+      volatility,
+      confidenceAccuracy,
+      sampleSize: slips.length
+    });
+
+    return {
+      analystId,
+      analystType: slips[0]?.analystType || "Own",
+      summary: {
+        ROI: overallROI,
+        hitRate,
+        edge,
+        profitPer100,
+        volatility: volatilityBucket,
+        maxDrawdown: drawdownStats.maxDrawdownPct,
+        status
+      },
+      strengths: {
+        bestMarket,
+        bestOddsRange,
+        bestSlipType
+      },
+      weaknesses: {
+        worstMarket: pickWorstBucket(calcRoiByGroup(marketStats)),
+        overLegging,
+        highVariance: volatilityBucket === "High"
+      },
+      trends: {
+        last10ROI,
+        last25ROI,
+        direction: trendDirection
+      },
+      detail: {
+        totalProfit,
+        totalStaked,
+        wins,
+        losses,
+        pushes,
+        profitPerSlip,
+        volatility,
+        drawdownStats,
+        losingStreaks,
+        confidenceAccuracy,
+        luckFactor,
+        compositeScore,
+        avgOddsTaken,
+        roiBySlipType,
+        hitRateBySlipType,
+        roiByLegs,
+        hitRateByLegs,
+        roiByMarket,
+        hitRateByMarket,
+        roiBySport,
+        hitRateBySport,
+        roiByOddsRange: oddsStats,
+        legInflationPenalty: legPenalty,
+        tagPerformance: tagStats
+      }
+    };
+  }
+
+  function roiFor(slips){
+    const staked = slips.reduce((a,s) => a + num(s.stake), 0);
+    const profit = slips.reduce((a,s) => a + (plFor(s.raw) ?? 0), 0);
+    return staked > 0 ? profit / staked : 0;
+  }
+
+  function stdDev(values){
+    if(values.length === 0) return 0;
+    const mean = values.reduce((a,v) => a + v, 0) / values.length;
+    const variance = values.reduce((a,v) => a + Math.pow(v - mean, 2), 0) / values.length;
+    return Math.sqrt(variance);
+  }
+
+  function drawdownFor(slips){
+    let peak = 0;
+    let equity = 0;
+    let maxDrawdown = 0;
+    let drawdownSum = 0;
+    let drawdownCount = 0;
+    let lastPeakIndex = 0;
+    let recoveryTimes = [];
+    let currentTroughIndex = null;
+
+    slips.forEach((slip, idx) => {
+      equity += unitProfitFor(slip);
+      if(equity >= peak){
+        if(currentTroughIndex !== null){
+          recoveryTimes.push(idx - currentTroughIndex);
+          currentTroughIndex = null;
+        }
+        peak = equity;
+        lastPeakIndex = idx;
+      }else{
+        const dd = peak > 0 ? (peak - equity) / peak : 0;
+        maxDrawdown = Math.max(maxDrawdown, dd);
+        drawdownSum += dd;
+        drawdownCount += 1;
+        if(currentTroughIndex === null) currentTroughIndex = lastPeakIndex;
+      }
+    });
+
+    const avgDrawdown = drawdownCount > 0 ? drawdownSum / drawdownCount : 0;
+    const avgRecovery = recoveryTimes.length
+      ? recoveryTimes.reduce((a,v) => a + v, 0) / recoveryTimes.length
+      : 0;
+    return {maxDrawdownPct: maxDrawdown, avgDrawdownPct: avgDrawdown, avgRecovery};
+  }
+
+  function losingStreakStats(slips){
+    let current = 0;
+    let longest = 0;
+    const streaks = [];
+    slips.forEach(s => {
+      if(s.result === "Loss"){
+        current += 1;
+      }else{
+        if(current > 0) streaks.push(current);
+        longest = Math.max(longest, current);
+        current = 0;
+      }
+    });
+    if(current > 0) streaks.push(current);
+    longest = Math.max(longest, current);
+    const avg = streaks.length ? streaks.reduce((a,v) => a + v, 0) / streaks.length : 0;
+    return {longest, average: avg};
+  }
+
+  function groupBy(slips, keyFn){
+    const out = new Map();
+    slips.forEach(s => {
+      const key = keyFn(s);
+      if(!out.has(key)) out.set(key, []);
+      out.get(key).push(s);
+    });
+    return out;
+  }
+
+  function calcRoiByGroup(groups){
+    const out = {};
+    for(const [key, slips] of groups.entries()){
+      out[key] = roiFor(slips);
+    }
+    return out;
+  }
+
+  function hitRateByGroup(groups){
+    const out = {};
+    for(const [key, slips] of groups.entries()){
+      const wins = slips.filter(s => s.result === "Win").length;
+      const losses = slips.filter(s => s.result === "Loss").length;
+      out[key] = (wins + losses) > 0 ? wins / (wins + losses) : 0;
+    }
+    return out;
+  }
+
+  function tagPerformance(slips){
+    const map = new Map();
+    slips.forEach(slip => {
+      slip.tags.forEach(tag => {
+        if(!map.has(tag)) map.set(tag, []);
+        map.get(tag).push(slip);
+      });
+    });
+    return {
+      roi: calcRoiByGroup(map),
+      hitRate: hitRateByGroup(map)
+    };
+  }
+
+  function oddsRangeStats(slips){
+    const groups = groupBy(slips, s => oddsRangeLabel(s.oddsDecimal));
+    return calcRoiByGroup(groups);
+  }
+
+  function pickBestBucket(stats){
+    const entries = Object.entries(stats);
+    if(entries.length === 0) return "—";
+    entries.sort((a,b) => b[1] - a[1]);
+    return entries[0][0];
+  }
+
+  function pickWorstBucket(stats){
+    const entries = Object.entries(stats);
+    if(entries.length === 0) return "—";
+    entries.sort((a,b) => a[1] - b[1]);
+    return entries[0][0];
+  }
+
+  function legInflationPenalty(slips){
+    const parlays = slips.filter(s => s.slipType === "Parlay");
+    if(parlays.length < 2) return 0;
+    const groups = groupBy(parlays, s => s.legsCount);
+    const roiByLegs = calcRoiByGroup(groups);
+    const legs = Object.keys(roiByLegs).map(n => Number(n)).filter(n => Number.isFinite(n)).sort((a,b) => a - b);
+    if(legs.length < 2) return 0;
+    const minLegs = legs[0];
+    const maxLegs = legs[legs.length - 1];
+    const slope = (roiByLegs[maxLegs] - roiByLegs[minLegs]) / Math.max(1, maxLegs - minLegs);
+    return slope;
+  }
+
+  function confidenceCalibration(slips){
+    const withConfidence = slips.filter(s => s.confidence !== null);
+    if(withConfidence.length === 0) return 0.5;
+    const grouped = groupBy(withConfidence, s => s.confidence);
+    let total = 0;
+    let weightedError = 0;
+    for(const [level, group] of grouped.entries()){
+      const winRate = group.filter(s => s.result === "Win").length / group.length;
+      const expected = num(level) / 5;
+      weightedError += Math.abs(winRate - expected) * group.length;
+      total += group.length;
+    }
+    const avgError = total > 0 ? weightedError / total : 0;
+    return clamp(1 - avgError, 0, 1);
+  }
+
+  function expectedVsActual(slips){
+    let expected = 0;
+    let actual = 0;
+    slips.forEach(s => {
+      if(s.result === "Push") return;
+      const prob = s.oddsDecimal > 0 ? 1 / s.oddsDecimal : 0;
+      expected += prob * (s.oddsDecimal - 1) + (1 - prob) * -1;
+      actual += unitProfitFor(s);
+    });
+    return actual - expected;
+  }
+
+  function analystCompositeScore({roi, edge, consistency, drawdown, volatility, confidenceAccuracy, sampleSize}){
+    const roiScore = normalizeScore(roi, -0.5, 0.5);
+    const edgeScore = normalizeScore(edge, -0.1, 0.1);
+    const consistencyScore = clamp(consistency, 0, 1) * 100;
+    const drawdownScore = 100 * (1 - clamp(drawdown / 0.5, 0, 1));
+    const volatilityScore = 100 * (1 - clamp(volatility / 20, 0, 1));
+    const confidenceScore = clamp(confidenceAccuracy, 0, 1) * 100;
+    const sampleScore = clamp(sampleSize / 50, 0, 1) * 100;
+
+    const weights = {
+      roi: 0.25,
+      edge: 0.2,
+      consistency: 0.15,
+      drawdown: 0.15,
+      volatility: 0.1,
+      confidence: 0.1,
+      sample: 0.05
+    };
+
+    return (
+      roiScore * weights.roi +
+      edgeScore * weights.edge +
+      consistencyScore * weights.consistency +
+      drawdownScore * weights.drawdown +
+      volatilityScore * weights.volatility +
+      confidenceScore * weights.confidence +
+      sampleScore * weights.sample
+    );
+  }
+
+  function normalizeScore(value, min, max){
+    if(min === max) return 50;
+    return clamp(((value - min) / (max - min)) * 100, 0, 100);
   }
 
   function statsForDone(slips){
@@ -890,13 +1441,19 @@
     };
 
     const fromSlips = (key) => state.slips.map(s => s[key]).filter(Boolean);
+    const tagFromSlips = () => state.slips.flatMap(s => {
+      if(Array.isArray(s.tags)) return s.tags;
+      if(typeof s.tags === "string") return parseTags(s.tags);
+      if(s.tag) return parseTags(s.tag);
+      return [];
+    });
     const merge = (preset, dynamic) => Array.from(new Set([...preset, ...dynamic])).sort();
 
     const lists = {
       appList: merge(presets.appList, fromSlips("app")),
       sportsbookList: merge(presets.sportsbookList, fromSlips("sportsbook")),
       leagueList: merge(presets.leagueList, fromSlips("league")),
-      tagList: merge(presets.tagList, fromSlips("tag")),
+      tagList: merge(presets.tagList, [...fromSlips("tag"), ...tagFromSlips()]),
       groupList: merge(presets.groupList, fromSlips("group")),
 
     };
@@ -928,6 +1485,9 @@
         (s.league||"").toLowerCase().includes(query) ||
         (s.oddsType||"").toLowerCase().includes(query) ||
         (s.creator||"").toLowerCase().includes(query) ||
+        (s.analystId||"").toLowerCase().includes(query) ||
+        (s.marketType||"").toLowerCase().includes(query) ||
+        (Array.isArray(s.tags) ? s.tags.join(" ") : "").toLowerCase().includes(query) ||
         (s.tag||"").toLowerCase().includes(query) ||
         (s.group||"").toLowerCase().includes(query) ||
         (s.slipId||"").toLowerCase().includes(query) ||
@@ -952,6 +1512,78 @@
     d.className = "kpi";
     d.innerHTML = `<div class="k">${label}</div><div class="v">${valueHtml}</div>`;
     return d;
+  }
+
+  function renderAnalystProfiles(done){
+    const profiles = analyzeAnalystProfiles(done);
+    const analystIds = Object.keys(profiles).sort();
+    const primarySelect = $("analystPrimary");
+    const compareSelect = $("analystCompare");
+    const grid = $("profileGrid");
+
+    if(!primarySelect || !compareSelect || !grid) return;
+
+    primarySelect.innerHTML = analystIds.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`).join("");
+    compareSelect.innerHTML = `<option value="">None</option>` + analystIds.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`).join("");
+
+    if(!analystIds.length){
+      grid.innerHTML = `<div class="muteline">No finished slips yet. Profiles appear after closing out slips.</div>`;
+      return;
+    }
+
+    if(!analystIds.includes(state.analystPrimary)){
+      state.analystPrimary = analystIds[0];
+    }
+    if(state.analystCompare && !analystIds.includes(state.analystCompare)){
+      state.analystCompare = "";
+    }
+    primarySelect.value = state.analystPrimary;
+    compareSelect.value = state.analystCompare;
+
+    const cards = [];
+    const primaryProfile = profiles[state.analystPrimary];
+    if(primaryProfile) cards.push(renderProfileCard(primaryProfile, "Primary"));
+    if(state.analystCompare && profiles[state.analystCompare]){
+      cards.push(renderProfileCard(profiles[state.analystCompare], "Comparison"));
+    }
+    grid.innerHTML = cards.join("");
+  }
+
+  function renderProfileCard(profile, label){
+    const summary = profile.summary;
+    const trends = profile.trends;
+    const strengths = profile.strengths;
+    const weaknesses = profile.weaknesses;
+    const detail = profile.detail;
+    const statusClass = summary.status === "HOT" ? "pos" : summary.status === "COLD" ? "neg" : "neu";
+    return `
+      <div class="profile-card">
+        <div>
+          <div class="profile-pill">${label}</div>
+          <h3>${escapeHtml(profile.analystId)}</h3>
+          <div class="profile-meta">${escapeHtml(profile.analystType)} • ${detail.wins}W-${detail.losses}L-${detail.pushes}P • ${detail.totalStaked ? fmtMoney(detail.totalStaked) : fmtMoney(0)} staked</div>
+        </div>
+        <div class="profile-stats">
+          <div class="profile-stat"><div class="k">ROI</div><div class="v mono">${fmtPct(summary.ROI)}</div></div>
+          <div class="profile-stat"><div class="k">Hit Rate</div><div class="v mono">${fmtPct(summary.hitRate)}</div></div>
+          <div class="profile-stat"><div class="k">Edge</div><div class="v mono">${fmtPct(summary.edge)}</div></div>
+          <div class="profile-stat"><div class="k">Profit / $100</div><div class="v mono">${fmtMoney(summary.profitPer100)}</div></div>
+          <div class="profile-stat"><div class="k">Volatility</div><div class="v mono">${summary.volatility}</div></div>
+          <div class="profile-stat"><div class="k">Max Drawdown</div><div class="v mono">${fmtPct(summary.maxDrawdown)}</div></div>
+          <div class="profile-stat"><div class="k">Last 10 ROI</div><div class="v mono">${fmtPct(trends.last10ROI)}</div></div>
+          <div class="profile-stat"><div class="k">Trend</div><div class="v ${statusClass}">${trends.direction} • ${summary.status}</div></div>
+          <div class="profile-stat"><div class="k">Composite Score</div><div class="v mono">${detail.compositeScore.toFixed(1)}</div></div>
+          <div class="profile-stat"><div class="k">Luck Factor</div><div class="v mono">${detail.luckFactor >= 0 ? "+" : ""}${detail.luckFactor.toFixed(2)}u</div></div>
+        </div>
+        <div class="profile-list">
+          <div><strong>Strengths:</strong> ${escapeHtml(strengths.bestMarket)} market, ${escapeHtml(strengths.bestOddsRange)} odds, ${escapeHtml(strengths.bestSlipType)} slips</div>
+          <div><strong>Weaknesses:</strong> ${escapeHtml(weaknesses.worstMarket)} market, ${weaknesses.overLegging ? "Over-legging risk" : "Leg structure ok"}, ${weaknesses.highVariance ? "High variance" : "Controlled variance"}</div>
+          <div><strong>Consistency:</strong> Last 25 ROI ${fmtPct(trends.last25ROI)} • Avg drawdown ${fmtPct(detail.drawdownStats.avgDrawdownPct)} • Avg recovery ${detail.drawdownStats.avgRecovery.toFixed(1)} slips</div>
+          <div><strong>Discipline:</strong> Longest losing streak ${detail.losingStreaks.longest} • Avg losing streak ${detail.losingStreaks.average.toFixed(1)}</div>
+          <div><strong>Confidence:</strong> Calibration ${Math.round(detail.confidenceAccuracy * 100)}%</div>
+        </div>
+      </div>
+    `;
   }
 
   function moneySpan(n){
@@ -1115,6 +1747,7 @@
       `Starting bankroll: <b class="mono">${fmtMoney(state.startingBankroll)}</b> → Current (finished slips): <b class="mono">${fmtMoney(endBankroll)}</b>`;
 
     renderBankrollChart(done, endBankroll);
+    renderAnalystProfiles(done);
   }
 
   function renderBankrollChart(done, endBankroll){
@@ -1187,17 +1820,30 @@
     const oddsType = $("oddsType").value;
     const stake = num($("stake").value);
     const mult = num($("mult").value);
+    const oddsDecimalInput = num($("oddsDecimal").value);
     const paidRaw = $("paid").value;
     const paidMult = (paidRaw === "" ? "" : num(paidRaw));
     const tag = $("tag").value.trim();
+    let tags = parseTags($("tags").value);
+    if(!tags.length && tag) tags = parseTags(tag);
     const group = $("group").value.trim();
     const creator = $("creator").value;
+    const analystId = $("analystId").value.trim();
+    const analystType = $("analystType").value;
+    const slipType = $("slipType").value;
+    const legsCount = num($("legsCount").value);
+    const marketType = $("marketType").value.trim();
+    const confidenceRaw = $("confidence").value;
+    const confidence = confidenceRaw ? num(confidenceRaw) : null;
     const slipId = $("slipId").value.trim();
     const players = readPlayersFromForm();
     if(players === null) return null;
 
     if(stake <= 0) return alert("Stake must be > 0"), null;
     if(mult <= 0) return alert("Listed multiplier must be > 0"), null;
+    const oddsDecimal = oddsDecimalInput > 0 ? oddsDecimalInput : mult;
+    if(oddsDecimal <= 0) return alert("Odds (decimal) must be > 0"), null;
+    if(confidence !== null && (confidence < 1 || confidence > 5)) return alert("Confidence must be 1–5."), null;
     if(players.length === 0) return alert("Add at least one player/prop."), null;
 
     return {
@@ -1206,7 +1852,14 @@
       date, status,
       result: status==="DONE" ? result : "",
       app, sportsbook, league, oddsType,
-      creator, stake, mult, paidMult, tag, group, slipId, players
+      creator,
+      analystId: analystId || creator,
+      analystType: analystType || deriveAnalystType(analystId || creator),
+      slipType: slipType || (players.length > 1 ? "Parlay" : "Straight"),
+      legsCount: legsCount > 0 ? legsCount : Math.max(1, players.length),
+      marketType,
+      confidence: (confidence === null ? null : confidence),
+      stake, mult, oddsDecimal, paidMult, tag, tags, group, slipId, players
     };
   }
 
@@ -1217,11 +1870,19 @@
     $("oddsType").value = "";
     $("stake").value = "";
     $("mult").value = "";
+    $("oddsDecimal").value = "";
     $("paid").value = "";
     $("tag").value = "";
+    $("tags").value = "";
     $("group").value = "";
     $("slipId").value = "";
     $("creator").value = "CHUY";
+    $("analystId").value = "";
+    $("analystType").value = "Own";
+    $("slipType").value = "";
+    $("legsCount").value = "";
+    $("marketType").value = "";
+    $("confidence").value = "";
     renderPlayers([]);
   }
 
@@ -1242,13 +1903,15 @@
       autosave: state.autosave,
       logView: state.logView,
       kpiView: state.kpiView,
+      analystPrimary: state.analystPrimary,
+      analystCompare: state.analystCompare,
       slips: state.slips
     };
     downloadFile(`slips-${todayISO()}.txt`, JSON.stringify(payload,null,2), "text/plain");
   }
 
   function exportCsv(){
-    const cols = ["date","status","result","app","sportsbook","league","oddsType","creator","stake","mult","paidMult","payout","profitLoss","tag","group","slipId","players"];
+    const cols = ["date","status","result","app","sportsbook","league","oddsType","creator","analystId","analystType","slipType","legsCount","marketType","confidence","tags","stake","mult","oddsDecimal","paidMult","payout","profitLoss","tag","group","slipId","players"];
     const lines = [cols.join(",")];
     for(const s of state.slips){
       const p = payoutFor(s);
@@ -1258,7 +1921,9 @@
         .join(" | ");
       const row = [
         s.date, s.status, s.result, s.app, s.sportsbook, s.league, s.oddsType, s.creator,
-        s.stake, s.mult, (s.paidMult===""? "" : s.paidMult),
+        s.analystId, s.analystType, s.slipType, s.legsCount, s.marketType, s.confidence,
+        Array.isArray(s.tags) ? s.tags.join("|") : "",
+        s.stake, s.mult, s.oddsDecimal, (s.paidMult===""? "" : s.paidMult),
         (p===null? "" : p),
         (pl===null? "" : pl),
         s.tag, s.group, s.slipId,
@@ -1281,6 +1946,8 @@
       state.autosave = parsed.autosave === "off" ? "off" : "on";
       state.logView = (parsed.logView === "table" || parsed.logView === "cards") ? parsed.logView : "auto";
       state.kpiView = parsed.kpiView === "creators" ? "creators" : "overall";
+      state.analystPrimary = parsed.analystPrimary || "";
+      state.analystCompare = parsed.analystCompare || "";
 
       if(Array.isArray(parsed.slips)) state.slips = parsed.slips;
 
@@ -1296,10 +1963,18 @@
         league: s.league || "",
         oddsType: s.oddsType || "",
         creator: s.creator || "CHUY",
+        analystId: s.analystId || s.creator || "CHUY",
+        analystType: s.analystType || deriveAnalystType(s.analystId || s.creator || "CHUY"),
+        slipType: s.slipType || ((Array.isArray(s.players) ? s.players.length : 0) > 1 ? "Parlay" : "Straight"),
+        legsCount: num(s.legsCount) || ((Array.isArray(s.players) ? s.players.length : 0) || 1),
+        marketType: s.marketType || "",
+        confidence: (Number.isFinite(Number(s.confidence)) ? num(s.confidence) : null),
         stake: num(s.stake),
         mult: num(s.mult),
+        oddsDecimal: num(s.oddsDecimal) || num(s.mult),
         paidMult: (s.paidMult === undefined ? "" : s.paidMult),
         tag: s.tag || "",
+        tags: Array.isArray(s.tags) ? s.tags : parseTags(s.tags || s.tag || ""),
         group: s.group || "",
         slipId: s.slipId || "",
         players: Array.isArray(s.players) ? s.players : ((s.notes && !s.players) ? [{name: s.notes, line: "", ou: ""}] : [])
@@ -1443,6 +2118,16 @@
     save(); render();
   });
 
+  $("analystPrimary").addEventListener("change", (e) => {
+    state.analystPrimary = e.target.value;
+    save(); render();
+  });
+
+  $("analystCompare").addEventListener("change", (e) => {
+    state.analystCompare = e.target.value;
+    save(); render();
+  });
+
   $("viewDate").addEventListener("change", render);
   $("filterStatus").addEventListener("change", render);
   $("filterDate").addEventListener("change", render);
@@ -1453,6 +2138,13 @@
   $("status").addEventListener("change", () => {
     const done = $("status").value === "DONE";
     $("result").disabled = !done;
+  });
+
+  $("creator").addEventListener("change", () => {
+    const analystId = $("analystId");
+    if(analystId && !analystId.value.trim()){
+      analystId.value = $("creator").value;
+    }
   });
 
   // open kebab menu (works for table + cards)
@@ -1492,6 +2184,7 @@
   $("viewDate").value = todayISO();
   $("result").disabled = ($("status").value !== "DONE");
   $("creator").value = "CHUY";
+  $("analystType").value = "Own";
   renderPlayers([]);
   render();
 
