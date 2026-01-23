@@ -542,7 +542,7 @@
           </div>
           <div class="col-3">
             <label for="analystId">Analyst ID</label>
-            <input id="analystId" type="text" placeholder="Use a unique handle" />
+            <select id="analystId"></select>
           </div>
           <div class="col-3">
             <label for="analystType">Analyst Type</label>
@@ -807,6 +807,18 @@
 <script>
 (() => {
   const STORAGE_KEY = "slip_tracker_multipliers_pro_v2";
+  const PRESET_ANALYSTS = [
+    {id: "Jay", type: "VIP"},
+    {id: "Ochan", type: "VIP"},
+    {id: "Envixity", type: "VIP"},
+    {id: "Fluid", type: "Tryout"},
+    {id: "Pops", type: "Tryout"},
+    {id: "Chuy", type: "Own"}
+  ];
+  const DEFAULT_ANALYST_ID = "Chuy";
+  const PRESET_ANALYST_MAP = new Map(
+    PRESET_ANALYSTS.map(({id, type}) => [id.toUpperCase(), {id, type}])
+  );
 
   let state = {
     startingBankroll: 0,
@@ -851,6 +863,11 @@
     const tags = Array.isArray(slip.tags) ? slip.tags : parseTags(slip.tags);
     if(tags.length) return tags;
     return parseTags(slip.tag);
+  };
+
+  const getPresetAnalystType = (analystId) => {
+    const entry = PRESET_ANALYST_MAP.get(String(analystId || "").toUpperCase());
+    return entry ? entry.type : null;
   };
 
   const playersContainer = () => $("players");
@@ -950,17 +967,16 @@
     return p - num(s.stake);
   }
 
-  const CREATOR_TYPES = {
-    VIP: ["JAY","ENVIXITY","OCHAN"],
-    Tryout: ["FLUID","POPS"],
-    Own: ["CHUY","MIX"]
-  };
-
   function deriveAnalystType(analystId){
-    const key = String(analystId || "").toUpperCase();
-    if(CREATOR_TYPES.VIP.includes(key)) return "VIP";
-    if(CREATOR_TYPES.Tryout.includes(key)) return "Tryout";
-    return "Own";
+    return getPresetAnalystType(analystId) || "Own";
+  }
+
+  function syncAnalystType(analystId){
+    const analystType = $("analystType");
+    const derived = getPresetAnalystType(analystId);
+    if(analystType && derived){
+      analystType.value = derived;
+    }
   }
 
   function decimalToAmerican(decimalOdds){
@@ -1017,10 +1033,20 @@
       if(!byAnalyst.has(slip.analystId)) byAnalyst.set(slip.analystId, []);
       byAnalyst.get(slip.analystId).push(slip);
     });
+    PRESET_ANALYSTS.forEach(({id}) => {
+      if(!byAnalyst.has(id)) byAnalyst.set(id, []);
+    });
 
     const profiles = {};
     for(const [analystId, slips] of byAnalyst.entries()){
-      profiles[analystId] = buildAnalystProfile(analystId, slips);
+      if(slips.length){
+        profiles[analystId] = buildAnalystProfile(analystId, slips);
+      }else{
+        const profile = buildAnalystProfile(analystId, []);
+        const presetType = getPresetAnalystType(analystId);
+        if(presetType) profile.analystType = presetType;
+        profiles[analystId] = profile;
+      }
     }
     return profiles;
   }
@@ -1430,6 +1456,23 @@
     });
   }
 
+  function refreshAnalystSelector(){
+    const select = $("analystId");
+    if(!select) return;
+    const presetIds = PRESET_ANALYSTS.map(({id}) => id);
+    const presetLookup = new Set(presetIds.map(id => id.toUpperCase()));
+    const fromSlips = Array.from(new Set(state.slips.map(s => s.analystId).filter(Boolean)));
+    const merged = [
+      ...presetIds,
+      ...fromSlips.filter(id => !presetLookup.has(String(id).toUpperCase()))
+    ];
+    const current = select.value;
+    select.innerHTML = merged.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`).join("");
+    const fallback = merged.includes(DEFAULT_ANALYST_ID) ? DEFAULT_ANALYST_ID : (merged[0] || "");
+    select.value = merged.includes(current) ? current : fallback;
+    syncAnalystType(select.value);
+  }
+
   function applyFilters(list){
     const status = $("filterStatus").value;
     const query = $("search").value.trim().toLowerCase();
@@ -1561,6 +1604,7 @@
     refreshDateDropdown();
     refreshGroupDropdown();
     refreshDatalists();
+    refreshAnalystSelector();
     setBodyView();
 
     $("bankroll").value = String(state.startingBankroll || "");
@@ -1845,7 +1889,7 @@
     setValue("group", "");
     setValue("slipId", "");
     setValue("creator", "CHUY");
-    setValue("analystId", "");
+    setValue("analystId", "Chuy");
     setValue("analystType", "Own");
     setValue("slipType", "");
     setValue("legsCount", "");
@@ -2112,7 +2156,12 @@
     const analystId = $("analystId");
     if(analystId && !analystId.value.trim()){
       analystId.value = $("creator").value;
+      syncAnalystType(analystId.value);
     }
+  });
+
+  $("analystId").addEventListener("change", (e) => {
+    syncAnalystType(e.target.value);
   });
 
   // open kebab menu (works for table + cards)
@@ -2152,7 +2201,8 @@
   $("viewDate").value = todayISO();
   $("result").disabled = ($("status").value !== "DONE");
   $("creator").value = "CHUY";
-  $("analystType").value = "Own";
+  $("analystId").value = DEFAULT_ANALYST_ID;
+  syncAnalystType(DEFAULT_ANALYST_ID);
   renderPlayers([]);
   render();
 
