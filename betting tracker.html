@@ -466,7 +466,15 @@
           </div>
           <div class="col-3">
             <label for="app">App (optional)</label>
-
+            <input id="app" type="text" list="appList" placeholder="PrizePicks" />
+          </div>
+          <div class="col-3">
+            <label for="sportsbook">Sportsbook (optional)</label>
+            <input id="sportsbook" type="text" list="sportsbookList" placeholder="FanDuel" />
+          </div>
+          <div class="col-3">
+            <label for="league">League (optional)</label>
+            <input id="league" type="text" list="leagueList" placeholder="NBA" />
           </div>
           <div class="col-3">
             <label for="oddsType">Odds Type (optional)</label>
@@ -495,10 +503,33 @@
             <input id="stake" type="number" step="0.01" placeholder="50" min="0.01" inputmode="decimal" />
 
           </div>
+          <div class="col-3">
+            <label for="mult">Listed Multiplier (x)</label>
+            <input id="mult" type="number" step="0.01" placeholder="2.0" min="0.01" inputmode="decimal" />
+          </div>
+          <div class="col-3">
+            <label for="paid">Paid Multiplier (optional)</label>
+            <input id="paid" type="number" step="0.01" placeholder="1.8" min="0" inputmode="decimal" />
+          </div>
+          <div class="col-3">
+            <label for="tag">Tag (optional)</label>
+            <input id="tag" type="text" list="tagList" placeholder="Parlay" />
+          </div>
+          <div class="col-3">
+            <label for="group">Group / Session (optional)</label>
+            <input id="group" type="text" list="groupList" placeholder="Weekend slate" />
+          </div>
 
           <div class="col-6">
             <label for="slipId">Slip ID (optional)</label>
-
+            <input id="slipId" type="text" list="slipIdList" placeholder="ABC123" />
+          </div>
+          <div class="col-12">
+            <div class="section-title" style="margin-top:6px;">
+              <h2>Players / Props</h2>
+              <button class="btn" id="addPlayerBtn" type="button">Add Player</button>
+            </div>
+            <div id="players" style="display:grid; gap:10px;"></div>
           </div>
 
           <div class="col-12" style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -547,7 +578,7 @@
                   <th scope="col" style="width: 120px;">Sportsbook</th>
                   <th scope="col" style="width: 90px;">League</th>
                   <th scope="col" style="width: 90px;">Odds</th>
-
+                  <th scope="col" style="width: 120px;">Creator</th>
                   <th scope="col" class="right" style="width: 92px;">Stake</th>
                   <th scope="col" class="right" style="width: 72px;">x</th>
                   <th scope="col" class="right" style="width: 92px;">Paid x</th>
@@ -556,7 +587,7 @@
                   <th scope="col" style="width: 90px;">Tag</th>
                   <th scope="col" style="width: 120px;">Group</th>
                   <th scope="col" style="width: 110px;">Slip ID</th>
-
+                  <th scope="col" style="width: 220px;">Players</th>
                   <th scope="col" class="right" style="width: 70px;">⋯</th>
                 </tr>
               </thead>
@@ -624,7 +655,7 @@
               </select>
             </div>
             <div class="col-6">
-
+              <label for="search">Search</label>
               <input id="search" type="text" placeholder="type to filter..." />
             </div>
             <div class="col-6">
