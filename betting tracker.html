@@ -617,6 +617,16 @@
               <input id="bankroll" type="number" step="0.01" placeholder="1000" inputmode="decimal" />
             </div>
           </div>
+          <div class="row">
+            <div class="col-12">
+              <label for="kpiView">Earnings View</label>
+              <select id="kpiView">
+                <option value="overall">Overall KPIs</option>
+                <option value="creators">By creator category</option>
+              </select>
+              <div class="muteline">Switch to break down earnings by VIP, tryout, and own slips.</div>
+            </div>
+          </div>
 
           <div class="kpis" id="kpis" role="status" aria-live="polite"></div>
           <div class="bankline" id="bankrollLine" role="status" aria-live="polite"></div>
@@ -717,6 +727,7 @@
     startingBankroll: 0,
     autosave: "on",
     logView: "auto", // auto | table | cards
+    kpiView: "overall", // overall | creators
     slips: []
   };
 
@@ -812,6 +823,7 @@
       state.startingBankroll = num(parsed.startingBankroll);
       state.autosave = parsed.autosave === "off" ? "off" : "on";
       state.logView = (parsed.logView === "table" || parsed.logView === "cards") ? parsed.logView : "auto";
+      state.kpiView = parsed.kpiView === "creators" ? "creators" : "overall";
       state.slips = Array.isArray(parsed.slips) ? parsed.slips : [];
     }catch{}
   }
@@ -834,6 +846,14 @@
     const p = payoutFor(s);
     if(p === null) return null;
     return p - num(s.stake);
+  }
+
+  function statsForDone(slips){
+    const staked = slips.reduce((a,s)=>a+num(s.stake),0);
+    const paid = slips.reduce((a,s)=>a + (payoutFor(s) ?? 0),0);
+    const net = paid - staked;
+    const roi = staked > 0 ? net / staked : 0;
+    return {staked, paid, net, roi};
   }
 
   function statusPill(s){
@@ -949,6 +969,7 @@
     $("bankroll").value = String(state.startingBankroll || "");
     $("autosave").value = state.autosave;
     $("logView").value = state.logView || "auto";
+    $("kpiView").value = state.kpiView || "overall";
 
     const shown = applyFilters(state.slips);
 
@@ -1054,10 +1075,7 @@
     const dayRoi = dayStaked > 0 ? dayNet/dayStaked : 0;
 
     const done = state.slips.filter(s => s.status === "DONE");
-    const allStaked = done.reduce((a,s)=>a+num(s.stake),0);
-    const allPaid = done.reduce((a,s)=>a + (payoutFor(s) ?? 0),0);
-    const allNet = allPaid - allStaked;
-    const allRoi = allStaked > 0 ? allNet/allStaked : 0;
+    const {staked: allStaked, paid: allPaid, net: allNet, roi: allRoi} = statsForDone(done);
     const doneCount = done.length;
     const wins = done.filter(s => s.result === "W").length;
     const winRate = doneCount > 0 ? wins / doneCount : 0;
@@ -1069,14 +1087,29 @@
 
     const kpis = $("kpis");
     kpis.innerHTML = "";
-    kpis.appendChild(kpiCard(`Selected Day Net (${view})`, moneySpan(dayNet)));
-    kpis.appendChild(kpiCard(`Selected Day ROI`, `<span class="mono">${fmtPct(dayRoi)}</span>`));
-    kpis.appendChild(kpiCard(`All-Time Net`, moneySpan(allNet)));
-    kpis.appendChild(kpiCard(`All-Time ROI`, `<span class="mono">${fmtPct(allRoi)}</span>`));
-    kpis.appendChild(kpiCard(`Win Rate`, `<span class="mono">${fmtPct(winRate)}</span>`));
-    kpis.appendChild(kpiCard(`Avg Stake`, `<span class="mono">${fmtMoney(avgStake)}</span>`));
-    kpis.appendChild(kpiCard(`Avg Multiplier`, `<span class="mono">${avgMult.toFixed(2)}x</span>`));
-    kpis.appendChild(kpiCard(`Pending Slips`, `<span class="mono">${pendingCount}</span>`));
+    if(state.kpiView === "creators"){
+      const creatorGroups = [
+        {label: "VIP Analysts", creators: ["JAY","ENVIXITY","OCHAN"]},
+        {label: "Tryout Analysts", creators: ["FLUID","POPS"]},
+        {label: "Own Slips", creators: ["CHUY","MIX"]}
+      ];
+
+      for(const group of creatorGroups){
+        const groupDone = done.filter(s => group.creators.includes(String(s.creator || "").toUpperCase()));
+        const stats = statsForDone(groupDone);
+        kpis.appendChild(kpiCard(`${group.label} Net`, moneySpan(stats.net)));
+        kpis.appendChild(kpiCard(`${group.label} ROI`, `<span class="mono">${fmtPct(stats.roi)}</span>`));
+      }
+    }else{
+      kpis.appendChild(kpiCard(`Selected Day Net (${view})`, moneySpan(dayNet)));
+      kpis.appendChild(kpiCard(`Selected Day ROI`, `<span class="mono">${fmtPct(dayRoi)}</span>`));
+      kpis.appendChild(kpiCard(`All-Time Net`, moneySpan(allNet)));
+      kpis.appendChild(kpiCard(`All-Time ROI`, `<span class="mono">${fmtPct(allRoi)}</span>`));
+      kpis.appendChild(kpiCard(`Win Rate`, `<span class="mono">${fmtPct(winRate)}</span>`));
+      kpis.appendChild(kpiCard(`Avg Stake`, `<span class="mono">${fmtMoney(avgStake)}</span>`));
+      kpis.appendChild(kpiCard(`Avg Multiplier`, `<span class="mono">${avgMult.toFixed(2)}x</span>`));
+      kpis.appendChild(kpiCard(`Pending Slips`, `<span class="mono">${pendingCount}</span>`));
+    }
 
     $("bankrollLine").innerHTML =
       `Starting bankroll: <b class="mono">${fmtMoney(state.startingBankroll)}</b> → Current (finished slips): <b class="mono">${fmtMoney(endBankroll)}</b>`;
@@ -1208,6 +1241,7 @@
       startingBankroll: state.startingBankroll,
       autosave: state.autosave,
       logView: state.logView,
+      kpiView: state.kpiView,
       slips: state.slips
     };
     downloadFile(`slips-${todayISO()}.txt`, JSON.stringify(payload,null,2), "text/plain");
@@ -1246,6 +1280,7 @@
       if(parsed.startingBankroll !== undefined) state.startingBankroll = num(parsed.startingBankroll);
       state.autosave = parsed.autosave === "off" ? "off" : "on";
       state.logView = (parsed.logView === "table" || parsed.logView === "cards") ? parsed.logView : "auto";
+      state.kpiView = parsed.kpiView === "creators" ? "creators" : "overall";
 
       if(Array.isArray(parsed.slips)) state.slips = parsed.slips;
 
@@ -1400,6 +1435,11 @@
 
   $("logView").addEventListener("change", (e) => {
     state.logView = e.target.value;
+    save(); render();
+  });
+
+  $("kpiView").addEventListener("change", (e) => {
+    state.kpiView = e.target.value === "creators" ? "creators" : "overall";
     save(); render();
   });
 
