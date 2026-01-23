@@ -82,6 +82,11 @@
 
     .top-actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
 
+    body[data-ui-mode="ENTER_SLIP"] [data-ui="view"]{ display:none !important; }
+    body[data-ui-mode="VIEW"] [data-ui="enter"]{ display:none !important; }
+    body[data-ui-mode="ENTER_SLIP"] .grid{ grid-template-columns: minmax(0, 1fr); }
+    body[data-ui-mode="ENTER_SLIP"] .slip-entry-card{ width: 100%; }
+
     /* Buttons & inputs */
     .btn{
       appearance:none; border: 1px solid var(--border);
@@ -296,58 +301,7 @@
       display: block;
     }
 
-    /* Table wrapper: prevents page overflow */
-    .tablewrap{
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      background: rgba(255,255,255,0.03);
-      min-width: 0;
-    }
-    .table-scroll{
-      max-height: 460px;
-      overflow: auto;              /* vertical + horizontal inside */
-      overscroll-behavior: contain;
-      -webkit-overflow-scrolling: touch;
-    }
-    table{
-      width:100%;
-      border-collapse: collapse;
-      table-layout: fixed;         /* stops columns from forcing huge widths */
-      min-width: 860px;            /* only the inner scroller scrolls horizontally */
-    }
-    th, td{
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      padding: 10px 10px;
-      font-size: 13px;
-      vertical-align: top;
-      text-align:left;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    th{
-      position: sticky; top: 0; z-index: 5;
-      background: rgba(11,15,25,.88);
-      backdrop-filter: blur(10px);
-      color: rgba(255,255,255,0.78);
-      font-size: 12px;
-      letter-spacing: .2px;
-    }
-    td.right, th.right{ text-align:right; }
     .mono{ font-family: var(--mono); }
-    caption{
-      text-align:left;
-      padding: 10px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    /* Players truncate in table */
-    .notes-trunc{
-      white-space: nowrap;
-      max-width: 340px;
-    }
 
     /* Pills */
     .pill{
@@ -381,65 +335,72 @@
 
     .muteline{ color: var(--muted); font-size: 12px; margin-top: 8px; }
 
-    /* Log view toggles */
-    .log-views{ display:flex; gap: 8px; align-items:center; flex-wrap:wrap; }
-    .smalltag{ font-size: 12px; color: var(--muted); }
-
-    /* Cards log */
-    .cardsWrap{ display:none; gap: 10px; margin-top: 10px; }
-    .slipCard{
+    .slip-log{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      overflow-x: hidden;
+    }
+    .slip-row{
       border: 1px solid var(--border);
       background: rgba(255,255,255,0.04);
       border-radius: 16px;
       padding: 12px;
-      display:grid;
+      display:flex;
+      flex-direction:column;
       gap: 10px;
+      cursor:pointer;
     }
-    .slipCard .top{
-      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    .slip-row-top{
+      display:flex;
+      gap: 10px;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
     }
-    .slipCard .meta{
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-      color: rgba(255,255,255,0.8);
-      font-size: 13px;
-    }
-    .slipCard .meta .mono{ color: rgba(255,255,255,0.9); }
-    .slipCard .grid2{
-      display:grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    }
-    .slipCard .kv{
-      border: 1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.03);
-      border-radius: 14px;
-      padding: 10px;
+    .slip-summary{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+      flex: 1;
       min-width: 0;
     }
-    .slipCard .kv .k{ font-size: 12px; color: var(--muted); }
-    .slipCard .kv .v{ margin-top: 4px; font-weight: 900; }
-    .slipCard .notes{
-      white-space: pre-wrap;
-      color: rgba(255,255,255,0.82);
-      border-top: 1px solid rgba(255,255,255,0.10);
-      padding-top: 10px;
+    .slip-cell{
+      flex: 1 1 120px;
+      min-width: 110px;
+    }
+    .slip-cell .k{
+      font-size: 11px;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+      color: var(--muted2);
+    }
+    .slip-cell .v{
+      margin-top: 4px;
+      font-weight: 700;
       font-size: 13px;
+      color: var(--text);
+      white-space: normal;
+      word-break: break-word;
     }
-    @media (max-width: 520px){
-      .slipCard .grid2{ grid-template-columns: 1fr; }
+    .slip-props{
+      display:none;
+      flex-direction:column;
+      gap: 8px;
+      padding-left: 14px;
+      border-left: 2px solid rgba(110,168,255,0.35);
+      font-size: 12px;
+      color: rgba(255,255,255,0.78);
     }
-
-    /* Show cards on small screens (auto mode) */
-    body.view-auto .cardsWrap{ display: grid; }
-    body.view-auto .tablewrap{ display:none; }
-    @media (min-width: 900px){
-      body.view-auto .cardsWrap{ display:none; }
-      body.view-auto .tablewrap{ display:block; }
+    .slip-props .prop-name{
+      font-weight: 700;
+      color: rgba(255,255,255,0.9);
     }
-
-    body.view-table .cardsWrap{ display:none !important; }
-    body.view-table .tablewrap{ display:block !important; }
-
-    body.view-cards .cardsWrap{ display:grid !important; }
-    body.view-cards .tablewrap{ display:none !important; }
+    .slip-props .prop-detail{
+      color: rgba(255,255,255,0.65);
+      margin-top: 2px;
+    }
+    .slip-row[data-expanded="true"] .slip-props{ display:flex; }
 
     /* Floating menu / bottom sheet */
     .menu{
@@ -493,7 +454,7 @@
   </style>
 </head>
 
-<body class="view-auto">
+<body data-ui-mode="VIEW">
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="topbar">
     <div class="inner">
@@ -502,9 +463,10 @@
         <div class="sub">player props • multipliers • pending slips • import/export</div>
       </div>
       <div class="top-actions">
-        <button class="btn" id="exportBtn">Export TXT</button>
-        <button class="btn" id="exportCsvBtn">Export CSV</button>
-        <label class="btn ghost" style="gap:10px; padding:10px 12px;">
+        <button class="btn primary" id="enterSlipBtn" data-ui="view">+ Enter Slip</button>
+        <button class="btn" id="exportBtn" data-ui="view">Export TXT</button>
+        <button class="btn" id="exportCsvBtn" data-ui="view">Export CSV</button>
+        <label class="btn ghost" style="gap:10px; padding:10px 12px;" data-ui="view">
           Import
           <input id="importFile" type="file" accept=".txt,.json" style="display:none;">
         </label>
@@ -515,189 +477,144 @@
   <main class="wrap" id="main">
     <div class="grid">
       <!-- Left -->
-      <div class="card">
-        <div class="section-title">
-          <h2>Add Slip</h2>
-          <span class="hint">Add as Pending, finish later</span>
-        </div>
-        <div class="edit-banner" id="editBanner" hidden>
-          <span><strong>Editing slip</strong> — changes will update the selected slip.</span>
-          <button class="btn ghost" id="cancelEditBtn" type="button">Cancel edit</button>
-        </div>
-
-        <div class="row" role="group" aria-label="Add slip form">
-          <div class="col-3">
-            <label for="date">Date</label>
-            <input id="date" type="date" />
+      <div style="display:grid; gap: 14px;">
+        <div class="card slip-entry-card" data-ui="enter">
+          <div class="section-title">
+            <h2>Enter Slip</h2>
+            <span class="hint">Add as Pending, finish later</span>
           </div>
-          <div class="col-3">
-            <label for="status">Status</label>
-            <select id="status" aria-describedby="statusHelp">
-              <option value="PENDING">Pending</option>
-              <option value="DONE">Finished</option>
-            </select>
-            <div class="muteline" id="statusHelp">Set to Finished to unlock the result field.</div>
-          </div>
-          <div class="col-3">
-            <label for="result">Result (only if finished)</label>
-            <select id="result" aria-describedby="resultHelp">
-              <option value="W">Win</option>
-              <option value="L">Loss</option>
-              <option value="P">Push</option>
-            </select>
-            <div class="muteline" id="resultHelp">Disabled unless Status is Finished.</div>
-          </div>
-          <div class="col-3">
-            <label for="app">App (optional)</label>
-            <input id="app" type="text" list="appList" placeholder="PrizePicks" />
-          </div>
-          <div class="col-3">
-            <label for="sportsbook">Sportsbook (optional)</label>
-            <input id="sportsbook" type="text" list="sportsbookList" placeholder="FanDuel" />
-          </div>
-          <div class="col-3">
-            <label for="league">League (optional)</label>
-            <input id="league" type="text" list="leagueList" placeholder="NBA" />
-          </div>
-          <div class="col-3">
-            <label for="oddsType">Odds Type (optional)</label>
-            <select id="oddsType">
-              <option value="">Select</option>
-              <option value="standard">Standard</option>
-              <option value="boost">Boost</option>
-              <option value="promo">Promo</option>
-            </select>
-          </div>
-          <div class="col-3">
-            <label for="analystId">Analyst ID</label>
-            <select id="analystId"></select>
-          </div>
-          <div class="col-3">
-            <label for="analystType">Analyst Type</label>
-            <select id="analystType" disabled>
-              <option value="VIP">VIP</option>
-              <option value="Tryout">Tryout</option>
-              <option value="Own">Own</option>
-            </select>
-            <div class="muteline">Auto-set from analyst ID.</div>
-          </div>
-          <div class="col-3">
-            <label for="slipType">Slip Type</label>
-            <select id="slipType">
-              <option value="">Auto</option>
-              <option value="Straight">Straight</option>
-              <option value="Parlay">Parlay</option>
-            </select>
-          </div>
-          <div class="col-3">
-            <label for="legsCount">Legs Count</label>
-            <input id="legsCount" type="number" min="1" step="1" placeholder="2" />
+          <div class="edit-banner" id="editBanner" hidden>
+            <span><strong>Editing slip</strong> — changes will update the selected slip.</span>
+            <button class="btn ghost" id="cancelEditBtn" type="button">Cancel</button>
           </div>
 
-          <div class="col-3">
-            <label for="stake">Stake ($)</label>
-            <input id="stake" type="number" step="0.01" placeholder="50" min="0.01" inputmode="decimal" />
-
-          </div>
-          <div class="col-3">
-            <label for="mult">Listed Multiplier (x)</label>
-            <input id="mult" type="number" step="0.01" placeholder="2.0" min="0.01" inputmode="decimal" />
-          </div>
-          <div class="col-3">
-            <label for="paid">Paid Multiplier (optional)</label>
-            <input id="paid" type="number" step="0.01" placeholder="1.8" min="0" inputmode="decimal" />
-          </div>
-          <div class="col-3">
-            <label for="tag">Tag (optional)</label>
-            <input id="tag" type="text" list="tagList" placeholder="Parlay" />
-          </div>
-          <div class="col-3">
-            <label for="group">Group / Session (optional)</label>
-            <input id="group" type="text" list="groupList" placeholder="Weekend slate" />
-          </div>
-
-          <div class="col-6">
-            <label for="slipId">Slip ID (optional)</label>
-            <input id="slipId" type="text" list="slipIdList" placeholder="ABC123" />
-          </div>
-          <div class="col-12">
-            <div class="section-title" style="margin-top:6px;">
-              <h2>Players / Props</h2>
-              <button class="btn" id="addPlayerBtn" type="button">Add Player</button>
+          <div class="row" role="group" aria-label="Add slip form">
+            <div class="col-3">
+              <label for="date">Date</label>
+              <input id="date" type="date" />
             </div>
-            <div id="players" style="display:grid; gap:10px;"></div>
+            <div class="col-3">
+              <label for="status">Status</label>
+              <select id="status" aria-describedby="statusHelp">
+                <option value="PENDING">Pending</option>
+                <option value="DONE">Finished</option>
+              </select>
+              <div class="muteline" id="statusHelp">Set to Finished to unlock the result field.</div>
+            </div>
+            <div class="col-3">
+              <label for="result">Result (only if finished)</label>
+              <select id="result" aria-describedby="resultHelp">
+                <option value="W">Win</option>
+                <option value="L">Loss</option>
+                <option value="P">Push</option>
+              </select>
+              <div class="muteline" id="resultHelp">Disabled unless Status is Finished.</div>
+            </div>
+            <div class="col-3">
+              <label for="app">App (optional)</label>
+              <input id="app" type="text" list="appList" placeholder="PrizePicks" />
+            </div>
+            <div class="col-3">
+              <label for="league">League (optional)</label>
+              <input id="league" type="text" list="leagueList" placeholder="NBA" />
+            </div>
+            <div class="col-3">
+              <label for="oddsType">Odds Type (optional)</label>
+              <select id="oddsType">
+                <option value="">Select</option>
+                <option value="standard">Standard</option>
+                <option value="boost">Boost</option>
+                <option value="promo">Promo</option>
+              </select>
+            </div>
+            <div class="col-3">
+              <label for="analystId">Analyst ID</label>
+              <select id="analystId"></select>
+            </div>
+            <div class="col-3">
+              <label for="analystType">Analyst Type</label>
+              <select id="analystType" disabled>
+                <option value="VIP">VIP</option>
+                <option value="Tryout">Tryout</option>
+                <option value="Own">Own</option>
+              </select>
+              <div class="muteline">Auto-set from analyst ID.</div>
+            </div>
+            <div class="col-3">
+              <label for="slipType">Slip Type</label>
+              <select id="slipType">
+                <option value="">Auto</option>
+                <option value="Straight">Straight</option>
+                <option value="Parlay">Parlay</option>
+              </select>
+            </div>
+            <div class="col-3">
+              <label for="legsCount">Legs Count</label>
+              <input id="legsCount" type="number" min="1" step="1" placeholder="2" />
+            </div>
+
+            <div class="col-3">
+              <label for="stake">Stake ($)</label>
+              <input id="stake" type="number" step="0.01" placeholder="50" min="0.01" inputmode="decimal" />
+
+            </div>
+            <div class="col-3">
+              <label for="mult">Listed Multiplier (x)</label>
+              <input id="mult" type="number" step="0.01" placeholder="2.0" min="0.01" inputmode="decimal" />
+            </div>
+            <div class="col-3">
+              <label for="paid">Paid Multiplier (optional)</label>
+              <input id="paid" type="number" step="0.01" placeholder="1.8" min="0" inputmode="decimal" />
+            </div>
+            <div class="col-3">
+              <label for="tag">Tag (optional)</label>
+              <input id="tag" type="text" list="tagList" placeholder="Parlay" />
+            </div>
+            <div class="col-3">
+              <label for="group">Group / Session (optional)</label>
+              <input id="group" type="text" list="groupList" placeholder="Weekend slate" />
+            </div>
+
+            <div class="col-6">
+              <label for="slipId">Slip ID (optional)</label>
+              <input id="slipId" type="text" list="slipIdList" placeholder="ABC123" />
+            </div>
+            <div class="col-12">
+              <div class="section-title" style="margin-top:6px;">
+                <h2>Players / Props</h2>
+                <button class="btn" id="addPlayerBtn" type="button">Add Player</button>
+              </div>
+              <div id="players" style="display:grid; gap:10px;"></div>
+            </div>
+
+            <div class="col-12" style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="btn primary" id="addBtn" style="flex: 1 1 220px;">Save Slip</button>
+              <button class="btn" id="cancelEntryBtn" type="button" style="flex: 1 1 220px;">Cancel</button>
+            </div>
           </div>
 
-          <div class="col-12" style="display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="btn primary" id="addBtn" style="flex: 1 1 220px;">Add Slip</button>
-            <button class="btn" id="addPendingBtn" style="flex: 1 1 220px;">Quick Add Pending</button>
-            <button class="btn danger" id="clearBtn" style="flex: 1 1 220px;">Clear All</button>
+          <div class="muteline">
+            Finished payout: <span class="mono">stake × (paid x if set else listed x)</span>. Pending slips don’t affect profit.
           </div>
+
+          <datalist id="appList"></datalist>
+          <datalist id="leagueList"></datalist>
+          <datalist id="tagList"></datalist>
+          <datalist id="groupList"></datalist>
+          <datalist id="slipIdList"></datalist>
         </div>
 
-        <div class="muteline">
-          Finished payout: <span class="mono">stake × (paid x if set else listed x)</span>. Pending slips don’t affect profit.
-        </div>
-
-        <datalist id="appList"></datalist>
-        <datalist id="sportsbookList"></datalist>
-        <datalist id="leagueList"></datalist>
-        <datalist id="tagList"></datalist>
-        <datalist id="groupList"></datalist>
-        <datalist id="slipIdList"></datalist>
-
-        <div style="height:14px"></div>
-
-        <div class="section-title">
-          <h2>Slip Log</h2>
-          <div class="log-views">
-            <span class="smalltag">View</span>
-            <select id="logView" style="width: 150px;">
-              <option value="auto">Auto</option>
-              <option value="table">Table</option>
-              <option value="cards">Cards</option>
-            </select>
-            <span class="hint">Use ⋯ for actions</span>
+        <div class="card slip-log-card" data-ui="view">
+          <div class="section-title">
+            <h2>Slip Log</h2>
+            <span class="hint">Click a slip to view player props</span>
           </div>
+          <div class="slip-log" id="slipLog" role="list"></div>
         </div>
-
-        <!-- TABLE VIEW -->
-        <div class="tablewrap">
-          <div class="table-scroll">
-            <table>
-
-              <thead>
-                <tr>
-                  <th scope="col" style="width: 96px;">Date</th>
-                  <th scope="col" style="width: 110px;">Status</th>
-                  <th scope="col" style="width: 120px;">App</th>
-                  <th scope="col" style="width: 120px;">Sportsbook</th>
-                  <th scope="col" style="width: 90px;">League</th>
-                  <th scope="col" style="width: 90px;">Odds</th>
-                  <th scope="col" style="width: 120px;">Creator</th>
-                  <th scope="col" class="right" style="width: 92px;">Stake</th>
-                  <th scope="col" class="right" style="width: 72px;">x</th>
-                  <th scope="col" class="right" style="width: 92px;">Paid x</th>
-                  <th scope="col" class="right" style="width: 100px;">Payout</th>
-                  <th scope="col" class="right" style="width: 90px;">P/L</th>
-                  <th scope="col" style="width: 90px;">Tag</th>
-                  <th scope="col" style="width: 120px;">Group</th>
-                  <th scope="col" style="width: 110px;">Slip ID</th>
-                  <th scope="col" style="width: 220px;">Players</th>
-                  <th scope="col" class="right" style="width: 70px;">⋯</th>
-                </tr>
-              </thead>
-              <tbody id="rows"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- CARDS VIEW -->
-        <div class="cardsWrap" id="cards"></div>
       </div>
 
       <!-- Right -->
-      <div style="display:grid; gap: 14px;">
+      <div style="display:grid; gap: 14px;" data-ui="view">
         <div class="card">
           <div class="section-title">
             <h2>KPIs</h2>
@@ -857,12 +774,14 @@
   let state = {
     startingBankroll: 0,
     autosave: "on",
-    logView: "auto", // auto | table | cards
     kpiView: "overall", // overall | creators
     analystPrimary: "",
     analystCompare: "",
     slips: []
   };
+  let uiMode = "VIEW"; // VIEW | ENTER_SLIP
+  let expandedSlipId = null;
+  let pendingScrollId = null;
 
   const $ = (id) => document.getElementById(id);
 
@@ -1005,10 +924,9 @@
     return players;
   }
 
-  function setBodyView(){
-    document.body.classList.remove("view-auto","view-table","view-cards");
-    const v = state.logView || "auto";
-    document.body.classList.add(v === "table" ? "view-table" : v === "cards" ? "view-cards" : "view-auto");
+  function setUiMode(mode){
+    uiMode = mode === "ENTER_SLIP" ? "ENTER_SLIP" : "VIEW";
+    document.body.dataset.uiMode = uiMode;
   }
 
   function load(){
@@ -1019,16 +937,34 @@
       if(!parsed || typeof parsed !== "object") return;
       state.startingBankroll = num(parsed.startingBankroll);
       state.autosave = parsed.autosave === "off" ? "off" : "on";
-      state.logView = (parsed.logView === "table" || parsed.logView === "cards") ? parsed.logView : "auto";
       state.kpiView = parsed.kpiView === "creators" ? "creators" : "overall";
       state.analystPrimary = parsed.analystPrimary || "";
       state.analystCompare = parsed.analystCompare || "";
       state.slips = Array.isArray(parsed.slips) ? parsed.slips : [];
       state.slips = state.slips.map(s => ({
-        ...s,
+        id: s.id || genId(),
+        createdAt: s.createdAt || Date.now(),
+        date: s.date || "",
+        status: s.status === "DONE" ? "DONE" : "PENDING",
+        result: s.result || "",
+        app: s.app || "",
+        league: s.league || "",
+        oddsType: s.oddsType || "",
         creator: resolveCreator(s.creator, s.analystId),
         analystId: s.analystId || s.creator || "CHUY",
         analystType: s.analystType || deriveAnalystType(s.analystId || s.creator || "CHUY"),
+        slipType: s.slipType || ((Array.isArray(s.players) ? s.players.length : 0) > 1 ? "Parlay" : "Straight"),
+        legsCount: num(s.legsCount) || ((Array.isArray(s.players) ? s.players.length : 0) || 1),
+        marketType: s.marketType || "",
+        confidence: (Number.isFinite(Number(s.confidence)) ? num(s.confidence) : null),
+        stake: num(s.stake),
+        mult: num(s.mult),
+        oddsDecimal: num(s.oddsDecimal) || num(s.mult),
+        paidMult: (s.paidMult === undefined ? "" : s.paidMult),
+        tag: s.tag || "",
+        tags: Array.isArray(s.tags) ? s.tags : parseTags(s.tags || s.tag || ""),
+        group: s.group || "",
+        slipId: s.slipId || "",
         players: Array.isArray(s.players)
           ? s.players.map(player => ({
             name: player.name || "",
@@ -1519,7 +1455,6 @@
   function refreshDatalists(){
     const presets = {
       appList: ["PrizePicks", "Underdog", "FanDuel", "DraftKings", "BetMGM", "Caesars"],
-      sportsbookList: ["FanDuel", "DraftKings", "BetMGM", "Caesars", "PointsBet", "WynnBET"],
       leagueList: ["NBA", "NFL", "NHL", "MLB", "NCAAF", "NCAAB", "Soccer", "WNBA", "MMA", "Tennis"],
       tagList: ["nba", "nfl", "nhl", "mlb", "props", "parlay", "live"],
       groupList: [],
@@ -1537,7 +1472,6 @@
 
     const lists = {
       appList: merge(presets.appList, fromSlips("app")),
-      sportsbookList: merge(presets.sportsbookList, fromSlips("sportsbook")),
       leagueList: merge(presets.leagueList, fromSlips("league")),
       tagList: merge(presets.tagList, [...fromSlips("tag"), ...tagFromSlips()]),
       groupList: merge(presets.groupList, fromSlips("group")),
@@ -1584,7 +1518,6 @@
     if(query){
       out = out.filter(s =>
         (s.app||"").toLowerCase().includes(query) ||
-        (s.sportsbook||"").toLowerCase().includes(query) ||
         (s.league||"").toLowerCase().includes(query) ||
         (s.oddsType||"").toLowerCase().includes(query) ||
         (s.creator||"").toLowerCase().includes(query) ||
@@ -1733,106 +1666,64 @@
     refreshGroupDropdown();
     refreshDatalists();
     refreshAnalystSelector();
-    setBodyView();
 
     $("bankroll").value = String(state.startingBankroll || "");
     $("autosave").value = state.autosave;
-    $("logView").value = state.logView || "auto";
     $("kpiView").value = state.kpiView || "overall";
 
     const shown = applyFilters(state.slips);
 
-    // TABLE
-    const tbody = $("rows");
-    tbody.innerHTML = "";
+    const slipLog = $("slipLog");
+    slipLog.innerHTML = "";
     for(const s of shown){
-      const p = payoutFor(s);
-      const pl = plFor(s);
-
-      const payoutCell = (p === null) ? `<span style="color:rgba(255,255,255,.45)">—</span>` : fmtMoney(p);
-      const plCell = (pl === null) ? `<span style="color:rgba(255,255,255,.45)">—</span>`
-        : `<span class="${pl>0?'pos':(pl<0?'neg':'neu')}">${pl>=0?'+':''}${fmtMoney(pl)}</span>`;
-
-      const paidCell = (s.paidMult === "" || s.paidMult === null || s.paidMult === undefined)
-        ? `<span style="color:rgba(255,255,255,.45)">—</span>`
-        : `<span class="mono">${num(s.paidMult).toFixed(2)}x</span>`;
-
-    const playersText = (s.players || [])
-      .map(p => formatPlayerDisplay(p))
-      .join(" • ");
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="mono">${escapeHtml(s.date||"")}</td>
-      <td>${statusPill(s)}</td>
-      <td>${escapeHtml(s.app||"")}</td>
-      <td>${escapeHtml(s.sportsbook||"")}</td>
-      <td>${escapeHtml(s.league||"")}</td>
-      <td>${escapeHtml(s.oddsType||"")}</td>
-      <td>${escapeHtml(s.creator||"")}</td>
-      <td class="right mono">${fmtMoney(s.stake)}</td>
-      <td class="right mono">${num(s.mult).toFixed(2)}x</td>
-      <td class="right">${paidCell}</td>
-      <td class="right mono">${payoutCell}</td>
-      <td class="right">${plCell}</td>
-      <td>${escapeHtml(s.tag||"")}</td>
-      <td>${escapeHtml(s.group||"")}</td>
-      <td class="mono">${escapeHtml(s.slipId||"")}</td>
-      <td class="notes-trunc" title="${escapeHtml(playersText)}">${escapeHtml(playersText)}</td>
-      <td class="right">
-        <button class="kebab" title="Actions" data-kebab="${s.id}">⋯</button>
-      </td>
-    `;
-      tbody.appendChild(tr);
-    }
-
-    // CARDS
-    const cards = $("cards");
-    cards.innerHTML = "";
-    for(const s of shown){
-      const p = payoutFor(s);
-      const pl = plFor(s);
-      const payoutText = (p === null) ? "—" : fmtMoney(p);
-      const plText = (pl === null) ? "—" : `${pl>=0?"+":""}${fmtMoney(pl)}`;
-      const plCls = (pl === null) ? "neu" : (pl>0 ? "pos" : pl<0 ? "neg" : "neu");
-
-      const paidText = (s.paidMult === "" || s.paidMult === null || s.paidMult === undefined) ? "—" : `${num(s.paidMult).toFixed(2)}x`;
-      const playersList = (s.players || [])
-        .map(p => formatPlayerDisplay(p))
-        .join("\n");
-
-      const el = document.createElement("div");
-      el.className = "slipCard";
-      el.innerHTML = `
-        <div class="top">
+      const odds = num(s.oddsDecimal || s.mult).toFixed(2);
+      const analystLabel = s.analystId || s.creator || "";
+      const marketLabel = s.marketType || s.league || "Player props";
+      const players = Array.isArray(s.players) ? s.players : [];
+      const propsList = players.length
+        ? players.map(player => `
           <div>
-            <div class="meta">
-              <span class="mono">${escapeHtml(s.date||"")}</span>
-              ${statusPill(s)}
-              ${s.app ? `<span>• ${escapeHtml(s.app)}</span>` : ""}
-              ${s.sportsbook ? `<span>• ${escapeHtml(s.sportsbook)}</span>` : ""}
-              ${s.league ? `<span>• ${escapeHtml(s.league)}</span>` : ""}
-              ${s.oddsType ? `<span>• ${escapeHtml(s.oddsType)}</span>` : ""}
-              ${s.tag ? `<span>• ${escapeHtml(s.tag)}</span>` : ""}
-              ${s.group ? `<span>• ${escapeHtml(s.group)}</span>` : ""}
-              ${s.creator ? `<span>• ${escapeHtml(s.creator)}</span>` : ""}
-            </div>
+            <div class="prop-name">${escapeHtml(player.name || "Unknown Player")}</div>
+            <div class="prop-detail">${escapeHtml(`${player.ou || ""} ${player.line || ""}`.trim())} (${escapeHtml(marketLabel)})</div>
+          </div>
+        `).join("")
+        : `<div class="muteline">No player props listed.</div>`;
+
+      const row = document.createElement("div");
+      row.className = "slip-row";
+      row.setAttribute("data-slip-row", s.id);
+      row.setAttribute("role", "listitem");
+      row.setAttribute("data-expanded", expandedSlipId === s.id ? "true" : "false");
+      row.innerHTML = `
+        <div class="slip-row-top">
+          <div class="slip-summary">
+            <div class="slip-cell"><div class="k">Date</div><div class="v mono">${escapeHtml(s.date||"")}</div></div>
+            <div class="slip-cell"><div class="k">League</div><div class="v">${escapeHtml(s.league||"—")}</div></div>
+            <div class="slip-cell"><div class="k">Slip Type</div><div class="v">${escapeHtml(s.slipType||"—")}</div></div>
+            <div class="slip-cell"><div class="k">Legs</div><div class="v mono">${num(s.legsCount) || players.length || 1}</div></div>
+            <div class="slip-cell"><div class="k">Odds</div><div class="v mono">${odds}x</div></div>
+            <div class="slip-cell"><div class="k">Result</div><div class="v">${statusPill(s)}</div></div>
+            <div class="slip-cell"><div class="k">Analyst</div><div class="v">${escapeHtml(analystLabel || "—")}</div></div>
           </div>
           <button class="kebab" title="Actions" data-kebab="${s.id}">⋯</button>
         </div>
-
-        <div class="grid2">
-          <div class="kv"><div class="k">Stake</div><div class="v mono">${fmtMoney(s.stake)}</div></div>
-          <div class="kv"><div class="k">Multiplier</div><div class="v mono">${num(s.mult).toFixed(2)}x</div></div>
-          <div class="kv"><div class="k">Paid x</div><div class="v mono">${paidText}</div></div>
-          <div class="kv"><div class="k">Payout</div><div class="v mono">${payoutText}</div></div>
-          <div class="kv"><div class="k">Profit/Loss</div><div class="v mono ${plCls}">${plText}</div></div>
-          <div class="kv"><div class="k">Slip ID</div><div class="v mono">${escapeHtml(s.slipId||"—")}</div></div>
-          <div class="kv"><div class="k">Group</div><div class="v mono">${escapeHtml(s.group||"—")}</div></div>
+        <div class="slip-props">
+          ${propsList}
         </div>
-
-        ${playersList ? `<div class="notes">${escapeHtml(playersList)}</div>` : ""}
       `;
-      cards.appendChild(el);
+      slipLog.appendChild(row);
+    }
+
+    if(!shown.length){
+      slipLog.innerHTML = `<div class="muteline">No slips yet.</div>`;
+    }
+
+    if(pendingScrollId){
+      const target = slipLog.querySelector(`[data-slip-row="${pendingScrollId}"]`);
+      if(target){
+        target.scrollIntoView({behavior: "smooth", block: "center"});
+      }
+      pendingScrollId = null;
     }
 
     // KPIs
@@ -1952,7 +1843,6 @@
     const status = forcePending ? "PENDING" : $("status").value;
     const result = $("result").value;
     const app = $("app").value.trim();
-    const sportsbook = $("sportsbook").value.trim();
     const league = $("league").value.trim();
     const oddsType = $("oddsType").value;
     const stake = num($("stake").value);
@@ -1987,7 +1877,7 @@
       createdAt: existingSlip?.createdAt || Date.now(),
       date, status,
       result: status==="DONE" ? result : "",
-      app, sportsbook, league, oddsType,
+      app, league, oddsType,
       creator,
       analystId: analystId || creator,
       analystType: analystType || deriveAnalystType(analystId || creator),
@@ -2005,7 +1895,6 @@
       if(el) el.value = value;
     };
     setValue("app", "");
-    setValue("sportsbook", "");
     setValue("league", "");
     setValue("oddsType", "");
     setValue("stake", "");
@@ -2025,6 +1914,19 @@
     renderPlayers([]);
   }
 
+  function enterSlipMode(){
+    setUiMode("ENTER_SLIP");
+    $("main").scrollIntoView({behavior: "smooth", block: "start"});
+  }
+
+  function exitEnterMode(){
+    editingSlipId = null;
+    setEditingBanner(false);
+    clearForm();
+    setUiMode("VIEW");
+    render();
+  }
+
   // Import/Export
   function downloadFile(filename, content, mime){
     const blob = new Blob([content], {type:mime});
@@ -2040,7 +1942,6 @@
       exportedAt: new Date().toISOString(),
       startingBankroll: state.startingBankroll,
       autosave: state.autosave,
-      logView: state.logView,
       kpiView: state.kpiView,
       analystPrimary: state.analystPrimary,
       analystCompare: state.analystCompare,
@@ -2050,7 +1951,7 @@
   }
 
   function exportCsv(){
-    const cols = ["date","status","result","app","sportsbook","league","oddsType","creator","analystId","analystType","slipType","legsCount","marketType","confidence","tags","stake","mult","oddsDecimal","paidMult","payout","profitLoss","tag","group","slipId","players"];
+    const cols = ["date","status","result","app","league","oddsType","creator","analystId","analystType","slipType","legsCount","marketType","confidence","tags","stake","mult","oddsDecimal","paidMult","payout","profitLoss","tag","group","slipId","players"];
     const lines = [cols.join(",")];
     for(const s of state.slips){
       const p = payoutFor(s);
@@ -2059,7 +1960,7 @@
         .map(player => formatPlayerDisplay(player))
         .join(" | ");
       const row = [
-        s.date, s.status, s.result, s.app, s.sportsbook, s.league, s.oddsType, s.creator,
+        s.date, s.status, s.result, s.app, s.league, s.oddsType, s.creator,
         s.analystId, s.analystType, s.slipType, s.legsCount, s.marketType, s.confidence,
         Array.isArray(s.tags) ? s.tags.join("|") : "",
         s.stake, s.mult, s.oddsDecimal, (s.paidMult===""? "" : s.paidMult),
@@ -2083,7 +1984,6 @@
 
       if(parsed.startingBankroll !== undefined) state.startingBankroll = num(parsed.startingBankroll);
       state.autosave = parsed.autosave === "off" ? "off" : "on";
-      state.logView = (parsed.logView === "table" || parsed.logView === "cards") ? parsed.logView : "auto";
       state.kpiView = parsed.kpiView === "creators" ? "creators" : "overall";
       state.analystPrimary = parsed.analystPrimary || "";
       state.analystCompare = parsed.analystCompare || "";
@@ -2098,7 +1998,6 @@
         status: s.status === "DONE" ? "DONE" : "PENDING",
         result: s.result || "",
         app: s.app || "",
-        sportsbook: s.sportsbook || "",
         league: s.league || "",
         oddsType: s.oddsType || "",
         creator: resolveCreator(s.creator, s.analystId),
@@ -2195,6 +2094,7 @@
 
   function deleteSlip(id){
     state.slips = state.slips.filter(s => s.id !== id);
+    if(expandedSlipId === id) expandedSlipId = null;
     save(); render();
   }
 
@@ -2202,7 +2102,7 @@
     const banner = $("editBanner");
     const addBtn = $("addBtn");
     if(banner) banner.hidden = !isEditing;
-    if(addBtn) addBtn.textContent = isEditing ? "Save Changes" : "Add Slip";
+    if(addBtn) addBtn.textContent = isEditing ? "Save Changes" : "Save Slip";
   }
 
   function applySlipToForm(slip){
@@ -2214,7 +2114,6 @@
     setValue("status", slip.status || "PENDING");
     setValue("result", slip.result || "W");
     setValue("app", slip.app || "");
-    setValue("sportsbook", slip.sportsbook || "");
     setValue("league", slip.league || "");
     setValue("oddsType", slip.oddsType || "");
     setValue("stake", slip.stake || "");
@@ -2241,13 +2140,11 @@
     editingSlipId = id;
     setEditingBanner(true);
     applySlipToForm(slip);
-    $("main").scrollIntoView({behavior: "smooth", block: "start"});
+    enterSlipMode();
   }
 
   function cancelEdit(){
-    editingSlipId = null;
-    setEditingBanner(false);
-    clearForm();
+    exitEnterMode();
   }
 
   // Events
@@ -2264,25 +2161,11 @@
     }else{
       state.slips.push(slip);
     }
-    save(); clearForm(); render();
-  });
-
-  $("addPendingBtn").addEventListener("click", () => {
-    const slip = readSlipFromForm(true);
-    if(!slip) return;
-    slip.status = "PENDING"; slip.result = "";
-    state.slips.push(slip);
-    editingSlipId = null;
-    setEditingBanner(false);
-    save(); clearForm(); render();
-  });
-
-  $("clearBtn").addEventListener("click", () => {
-    if(!confirm("Clear ALL slips?")) return;
-    state.slips = [];
-    editingSlipId = null;
-    setEditingBanner(false);
-    save(); render();
+    save();
+    pendingScrollId = slip.id;
+    setUiMode("VIEW");
+    clearForm();
+    render();
   });
 
   $("addPlayerBtn").addEventListener("click", () => {
@@ -2291,6 +2174,8 @@
     renderPlayers(current);
   });
 
+  $("enterSlipBtn").addEventListener("click", enterSlipMode);
+  $("cancelEntryBtn").addEventListener("click", exitEnterMode);
   $("cancelEditBtn").addEventListener("click", cancelEdit);
 
   playersContainer().addEventListener("click", (e) => {
@@ -2322,11 +2207,6 @@
     if(state.autosave === "on") save();
   });
 
-  $("logView").addEventListener("change", (e) => {
-    state.logView = e.target.value;
-    save(); render();
-  });
-
   $("kpiView").addEventListener("change", (e) => {
     state.kpiView = e.target.value === "creators" ? "creators" : "overall";
     save(); render();
@@ -2348,6 +2228,18 @@
   $("filterGroup").addEventListener("change", render);
   $("sortBy").addEventListener("change", render);
   $("search").addEventListener("input", render);
+
+  const slipLog = $("slipLog");
+  if(slipLog){
+    slipLog.addEventListener("click", (e) => {
+      if(e.target.closest("[data-kebab]")) return;
+      const row = e.target.closest("[data-slip-row]");
+      if(!row) return;
+      const id = row.getAttribute("data-slip-row");
+      expandedSlipId = expandedSlipId === id ? null : id;
+      render();
+    });
+  }
 
   $("status").addEventListener("change", () => {
     const done = $("status").value === "DONE";
@@ -2383,7 +2275,9 @@
   });
 
   document.addEventListener("keydown", (e) => {
-    if(e.key === "Escape") closeMenu();
+    if(e.key !== "Escape") return;
+    if(menu.style.display === "block") closeMenu();
+    if(uiMode === "ENTER_SLIP") exitEnterMode();
   });
 
   $("menuClose").addEventListener("click", closeMenu);
@@ -2403,6 +2297,7 @@
 
   // Init
   load();
+  setUiMode("VIEW");
   $("date").value = todayISO();
   $("viewDate").value = todayISO();
   $("result").disabled = ($("status").value !== "DONE");
@@ -2412,10 +2307,6 @@
   renderPlayers([]);
   render();
 
-  // re-render on resize (so Auto view switches smoothly)
-  window.addEventListener("resize", () => {
-    if(state.logView === "auto") setBodyView();
-  });
 })();
 </script>
 </body>
