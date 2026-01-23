@@ -148,6 +148,19 @@
       min-width: 0; /* critical for grid overflow */
     }
 
+    .edit-banner{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      margin: 10px 0 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(110,168,255,0.35);
+      background: rgba(110,168,255,0.12);
+      font-size: 12px;
+    }
+
     /* Responsive layout */
     .grid{
       display:grid; gap: 14px;
@@ -252,6 +265,17 @@
       border: 1px solid var(--border);
       font-size: 11px;
       color: var(--text);
+    }
+    .profile-chart{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+      background: rgba(255,255,255,0.03);
+    }
+    .profile-chart svg{
+      width: 100%;
+      height: 80px;
+      display:block;
     }
     .kpi .k{ font-size: 12px; color: var(--muted); }
     .kpi .v{ margin-top: 6px; font-size: 18px; font-weight: 900; }
@@ -496,6 +520,10 @@
           <h2>Add Slip</h2>
           <span class="hint">Add as Pending, finish later</span>
         </div>
+        <div class="edit-banner" id="editBanner" hidden>
+          <span><strong>Editing slip</strong> — changes will update the selected slip.</span>
+          <button class="btn ghost" id="cancelEditBtn" type="button">Cancel edit</button>
+        </div>
 
         <div class="row" role="group" aria-label="Add slip form">
           <div class="col-3">
@@ -546,11 +574,12 @@
           </div>
           <div class="col-3">
             <label for="analystType">Analyst Type</label>
-            <select id="analystType">
+            <select id="analystType" disabled>
               <option value="VIP">VIP</option>
               <option value="Tryout">Tryout</option>
               <option value="Own">Own</option>
             </select>
+            <div class="muteline">Auto-set from analyst ID.</div>
           </div>
           <div class="col-3">
             <label for="slipType">Slip Type</label>
@@ -600,7 +629,7 @@
           </div>
 
           <div class="col-12" style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn primary" id="addBtn" style="flex: 1 1 220px;">Add Slip</button>
+              <button class="btn primary" id="addBtn" style="flex: 1 1 220px;">Add Slip</button>
             <button class="btn" id="addPendingBtn" style="flex: 1 1 220px;">Quick Add Pending</button>
             <button class="btn danger" id="clearBtn" style="flex: 1 1 220px;">Clear All</button>
           </div>
@@ -800,6 +829,10 @@
 
       <div class="line"></div>
 
+      <button class="btn" id="actEdit">Edit Slip</button>
+
+      <div class="line"></div>
+
       <button class="btn danger" id="actDelete">Delete Slip</button>
     </div>
   </div>
@@ -813,7 +846,8 @@
     {id: "Envixity", type: "VIP"},
     {id: "Fluid", type: "Tryout"},
     {id: "Pops", type: "Tryout"},
-    {id: "Chuy", type: "Own"}
+    {id: "Chuy", type: "Own"},
+    {id: "Combined", type: "Own"}
   ];
   const DEFAULT_ANALYST_ID = "Chuy";
   const PRESET_ANALYST_MAP = new Map(
@@ -854,6 +888,14 @@
 
   const genId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
 
+  const resolveCreator = (creator, analystId) => {
+    const creatorUpper = String(creator || "").toUpperCase();
+    const analystUpper = String(analystId || "").toUpperCase();
+    if(creator && creatorUpper !== "CHUY") return creator;
+    if(analystId && analystUpper !== "CHUY") return analystId;
+    return creator || analystId || "CHUY";
+  };
+
   const parseTags = (value) => {
     if(!value) return [];
     return value.split(",").map(tag => tag.trim()).filter(Boolean);
@@ -873,20 +915,33 @@
   const playersContainer = () => $("players");
   const playerRowTemplate = (player = {}, index = 0) => `
     <div class="row" data-player-row>
-      <div class="col-6">
+      <div class="col-4">
         <label>Player ${index + 1}</label>
         <input type="text" class="player-name" placeholder="Player name" value="${escapeHtml(player.name || "")}" />
       </div>
-      <div class="col-3">
+      <div class="col-2">
         <label>Prop Line</label>
         <input type="number" class="player-line" step="0.1" placeholder="15.5" value="${escapeHtml(player.line || "")}" />
       </div>
-      <div class="col-3">
+      <div class="col-2">
         <label>O/U</label>
         <select class="player-ou">
           <option value="">Select</option>
           <option value="Over" ${player.ou === "Over" ? "selected" : ""}>Over</option>
           <option value="Under" ${player.ou === "Under" ? "selected" : ""}>Under</option>
+        </select>
+      </div>
+      <div class="col-2">
+        <label>Final</label>
+        <input type="number" class="player-final" step="0.1" placeholder="18" value="${escapeHtml(player.final || "")}" />
+      </div>
+      <div class="col-2">
+        <label>Outcome</label>
+        <select class="player-outcome">
+          <option value="">Auto</option>
+          <option value="Win" ${player.outcome === "Win" ? "selected" : ""}>Win</option>
+          <option value="Loss" ${player.outcome === "Loss" ? "selected" : ""}>Loss</option>
+          <option value="Push" ${player.outcome === "Push" ? "selected" : ""}>Push</option>
         </select>
         <button class="btn danger remove-player" type="button" title="Remove player" style="margin-top:10px; width:100%;">Remove</button>
       </div>
@@ -906,21 +961,46 @@
     return Array.from(container.querySelectorAll("[data-player-row]")).map(row => ({
       name: row.querySelector(".player-name")?.value.trim() || "",
       line: row.querySelector(".player-line")?.value.trim() || "",
-      ou: row.querySelector(".player-ou")?.value || ""
+      ou: row.querySelector(".player-ou")?.value || "",
+      final: row.querySelector(".player-final")?.value.trim() || "",
+      outcome: row.querySelector(".player-outcome")?.value || ""
     }));
+  }
+
+  function derivePlayerOutcome(player){
+    const line = Number(player.line);
+    const final = Number(player.final);
+    if(!player.final || !Number.isFinite(line) || !Number.isFinite(final) || !player.ou) return "";
+    if(final === line) return "Push";
+    if(player.ou === "Over") return final > line ? "Win" : "Loss";
+    if(player.ou === "Under") return final < line ? "Win" : "Loss";
+    return "";
+  }
+
+  function formatPlayerDisplay(player){
+    const outcome = player.outcome || derivePlayerOutcome(player);
+    const finalPart = player.final ? ` (Final ${player.final}${outcome ? ` • ${outcome}` : ""})` : (outcome ? ` (${outcome})` : "");
+    return `${player.name} ${player.ou} ${player.line}${finalPart}`;
   }
 
   function readPlayersFromForm(){
     const draft = readPlayersDraft();
     const players = [];
     for(const player of draft){
-      const {name, line, ou} = player;
-      if(!name && !line && !ou) continue;
+      const {name, line, ou, final, outcome} = player;
+      if(!name && !line && !ou && !final && !outcome) continue;
       if(!name || !line || !ou){
         alert("Each player row needs a name, prop line, and over/under selection.");
         return null;
       }
-      players.push({name, line, ou});
+      const computedOutcome = outcome || derivePlayerOutcome({line, final, ou});
+      players.push({
+        name,
+        line,
+        ou,
+        final,
+        outcome: computedOutcome
+      });
     }
     return players;
   }
@@ -944,6 +1024,21 @@
       state.analystPrimary = parsed.analystPrimary || "";
       state.analystCompare = parsed.analystCompare || "";
       state.slips = Array.isArray(parsed.slips) ? parsed.slips : [];
+      state.slips = state.slips.map(s => ({
+        ...s,
+        creator: resolveCreator(s.creator, s.analystId),
+        analystId: s.analystId || s.creator || "CHUY",
+        analystType: s.analystType || deriveAnalystType(s.analystId || s.creator || "CHUY"),
+        players: Array.isArray(s.players)
+          ? s.players.map(player => ({
+            name: player.name || "",
+            line: player.line || "",
+            ou: player.ou || "",
+            final: player.final || "",
+            outcome: player.outcome || ""
+          }))
+          : []
+      }));
     }catch{}
   }
 
@@ -974,9 +1069,8 @@
   function syncAnalystType(analystId){
     const analystType = $("analystType");
     const derived = getPresetAnalystType(analystId);
-    if(analystType && derived){
-      analystType.value = derived;
-    }
+    if(!analystType) return;
+    analystType.value = derived || "Own";
   }
 
   function decimalToAmerican(decimalOdds){
@@ -1181,7 +1275,8 @@
         hitRateBySport,
         roiByOddsRange: oddsStats,
         legInflationPenalty: legPenalty,
-        tagPerformance: tagStats
+        tagPerformance: tagStats,
+        profitSeries
       }
     };
   }
@@ -1499,7 +1594,7 @@
         (s.tag||"").toLowerCase().includes(query) ||
         (s.group||"").toLowerCase().includes(query) ||
         (s.slipId||"").toLowerCase().includes(query) ||
-        (s.players || []).some(p => `${p.name} ${p.ou} ${p.line}`.toLowerCase().includes(query))
+        (s.players || []).some(p => `${p.name} ${p.ou} ${p.line} ${p.final || ""} ${p.outcome || ""}`.toLowerCase().includes(query))
       );
     }
 
@@ -1564,6 +1659,7 @@
     const weaknesses = profile.weaknesses;
     const detail = profile.detail;
     const statusClass = summary.status === "HOT" ? "pos" : summary.status === "COLD" ? "neg" : "neu";
+    const sparkline = renderProfileSparkline(detail.profitSeries || []);
     return `
       <div class="profile-card">
         <div>
@@ -1571,6 +1667,7 @@
           <h3>${escapeHtml(profile.analystId)}</h3>
           <div class="profile-meta">${escapeHtml(profile.analystType)} • ${detail.wins}W-${detail.losses}L-${detail.pushes}P • ${detail.totalStaked ? fmtMoney(detail.totalStaked) : fmtMoney(0)} staked</div>
         </div>
+        ${sparkline}
         <div class="profile-stats">
           <div class="profile-stat"><div class="k">ROI</div><div class="v mono">${fmtPct(summary.ROI)}</div></div>
           <div class="profile-stat"><div class="k">Hit Rate</div><div class="v mono">${fmtPct(summary.hitRate)}</div></div>
@@ -1590,6 +1687,37 @@
           <div><strong>Discipline:</strong> Longest losing streak ${detail.losingStreaks.longest} • Avg losing streak ${detail.losingStreaks.average.toFixed(1)}</div>
           <div><strong>Confidence:</strong> Calibration ${Math.round(detail.confidenceAccuracy * 100)}%</div>
         </div>
+      </div>
+    `;
+  }
+
+  function renderProfileSparkline(series){
+    if(!Array.isArray(series) || series.length === 0){
+      return `<div class="profile-chart"><div class="muteline">No slip trend yet.</div></div>`;
+    }
+    const data = series.slice(-16);
+    let cumulative = 0;
+    const points = data.map(val => {
+      cumulative += val;
+      return cumulative;
+    });
+    const min = Math.min(...points);
+    const max = Math.max(...points);
+    const range = max - min || 1;
+    const width = 100;
+    const height = 80;
+    const step = points.length > 1 ? width / (points.length - 1) : width;
+    const coords = points.map((val, idx) => {
+      const x = idx * step;
+      const y = height - ((val - min) / range) * (height - 10) - 5;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+    return `
+      <div class="profile-chart">
+        <div class="muteline">Profit trend (last ${data.length} slips)</div>
+        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Profit trend sparkline">
+          <polyline points="${coords}" fill="none" stroke="rgba(110,168,255,0.9)" stroke-width="2" stroke-linecap="round" />
+        </svg>
       </div>
     `;
   }
@@ -1630,7 +1758,7 @@
         : `<span class="mono">${num(s.paidMult).toFixed(2)}x</span>`;
 
     const playersText = (s.players || [])
-      .map(p => `${p.name} ${p.ou} ${p.line}`)
+      .map(p => formatPlayerDisplay(p))
       .join(" • ");
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -1669,7 +1797,7 @@
 
       const paidText = (s.paidMult === "" || s.paidMult === null || s.paidMult === undefined) ? "—" : `${num(s.paidMult).toFixed(2)}x`;
       const playersList = (s.players || [])
-        .map(p => `${p.name} ${p.ou} ${p.line}`)
+        .map(p => formatPlayerDisplay(p))
         .join("\n");
 
       const el = document.createElement("div");
@@ -1732,7 +1860,7 @@
       const creatorGroups = [
         {label: "VIP Analysts", creators: ["JAY","ENVIXITY","OCHAN"]},
         {label: "Tryout Analysts", creators: ["FLUID","POPS"]},
-        {label: "Own Slips", creators: ["CHUY","MIX"]}
+        {label: "Own Slips", creators: ["CHUY","COMBINED"]}
       ];
 
       for(const group of creatorGroups){
@@ -1819,7 +1947,7 @@
     ctx.fillText(`End: ${fmtMoney(endBankroll)}`, padding, height - 6);
   }
 
-  function readSlipFromForm(forcePending=false){
+  function readSlipFromForm(forcePending=false, existingSlip=null){
     const date = $("date").value || todayISO();
     const status = forcePending ? "PENDING" : $("status").value;
     const result = $("result").value;
@@ -1836,9 +1964,9 @@
     let tags = parseTags($("tags")?.value);
     if(!tags.length && tag) tags = parseTags(tag);
     const group = $("group").value.trim();
-    const creator = $("creator") ? $("creator").value : "CHUY";
     const analystId = $("analystId").value.trim();
-    const analystType = $("analystType").value;
+    const creator = resolveCreator("", analystId);
+    const analystType = deriveAnalystType(analystId || creator);
     const slipType = $("slipType").value;
     const legsCount = num($("legsCount").value);
     const marketType = $("marketType")?.value.trim() || "Player props";
@@ -1855,8 +1983,8 @@
     if(players.length === 0) return alert("Add at least one player/prop."), null;
 
     return {
-      id: genId(),
-      createdAt: Date.now(),
+      id: existingSlip?.id || genId(),
+      createdAt: existingSlip?.createdAt || Date.now(),
       date, status,
       result: status==="DONE" ? result : "",
       app, sportsbook, league, oddsType,
@@ -1888,13 +2016,12 @@
     setValue("tags", "");
     setValue("group", "");
     setValue("slipId", "");
-    setValue("creator", "CHUY");
     setValue("analystId", "Chuy");
-    setValue("analystType", "Own");
     setValue("slipType", "");
     setValue("legsCount", "");
     setValue("marketType", "");
     setValue("confidence", "");
+    syncAnalystType("Chuy");
     renderPlayers([]);
   }
 
@@ -1929,7 +2056,7 @@
       const p = payoutFor(s);
       const pl = plFor(s);
       const playersCsv = (s.players || [])
-        .map(player => `${player.name} ${player.ou} ${player.line}`)
+        .map(player => formatPlayerDisplay(player))
         .join(" | ");
       const row = [
         s.date, s.status, s.result, s.app, s.sportsbook, s.league, s.oddsType, s.creator,
@@ -1974,7 +2101,7 @@
         sportsbook: s.sportsbook || "",
         league: s.league || "",
         oddsType: s.oddsType || "",
-        creator: s.creator || "CHUY",
+        creator: resolveCreator(s.creator, s.analystId),
         analystId: s.analystId || s.creator || "CHUY",
         analystType: s.analystType || deriveAnalystType(s.analystId || s.creator || "CHUY"),
         slipType: s.slipType || ((Array.isArray(s.players) ? s.players.length : 0) > 1 ? "Parlay" : "Straight"),
@@ -1989,7 +2116,15 @@
         tags: Array.isArray(s.tags) ? s.tags : parseTags(s.tags || s.tag || ""),
         group: s.group || "",
         slipId: s.slipId || "",
-        players: Array.isArray(s.players) ? s.players : ((s.notes && !s.players) ? [{name: s.notes, line: "", ou: ""}] : [])
+        players: Array.isArray(s.players)
+          ? s.players.map(player => ({
+            name: player.name || "",
+            line: player.line || "",
+            ou: player.ou || "",
+            final: player.final || "",
+            outcome: player.outcome || ""
+          }))
+          : ((s.notes && !s.players) ? [{name: s.notes, line: "", ou: "", final: "", outcome: ""}] : [])
       }));
 
       save();
@@ -2004,6 +2139,7 @@
   const menuTitle = $("menuTitle");
   const menuPaid = $("menuPaid");
   let activeSlipId = null;
+  let editingSlipId = null;
 
   function closeMenu(){
     menu.style.display = "none";
@@ -2062,12 +2198,72 @@
     save(); render();
   }
 
+  function setEditingBanner(isEditing){
+    const banner = $("editBanner");
+    const addBtn = $("addBtn");
+    if(banner) banner.hidden = !isEditing;
+    if(addBtn) addBtn.textContent = isEditing ? "Save Changes" : "Add Slip";
+  }
+
+  function applySlipToForm(slip){
+    const setValue = (id, value) => {
+      const el = $(id);
+      if(el) el.value = value;
+    };
+    setValue("date", slip.date || todayISO());
+    setValue("status", slip.status || "PENDING");
+    setValue("result", slip.result || "W");
+    setValue("app", slip.app || "");
+    setValue("sportsbook", slip.sportsbook || "");
+    setValue("league", slip.league || "");
+    setValue("oddsType", slip.oddsType || "");
+    setValue("stake", slip.stake || "");
+    setValue("mult", slip.mult || "");
+    setValue("oddsDecimal", slip.oddsDecimal || "");
+    setValue("paid", (slip.paidMult === "" ? "" : slip.paidMult));
+    setValue("tag", slip.tag || "");
+    setValue("tags", Array.isArray(slip.tags) ? slip.tags.join(", ") : (slip.tags || ""));
+    setValue("group", slip.group || "");
+    setValue("slipId", slip.slipId || "");
+    setValue("analystId", slip.analystId || DEFAULT_ANALYST_ID);
+    setValue("slipType", slip.slipType || "");
+    setValue("legsCount", slip.legsCount || "");
+    setValue("marketType", slip.marketType || "");
+    setValue("confidence", slip.confidence ?? "");
+    syncAnalystType(slip.analystId || DEFAULT_ANALYST_ID);
+    $("result").disabled = ($("status").value !== "DONE");
+    renderPlayers(Array.isArray(slip.players) ? slip.players : []);
+  }
+
+  function startEditSlip(id){
+    const slip = state.slips.find(s => s.id === id);
+    if(!slip) return;
+    editingSlipId = id;
+    setEditingBanner(true);
+    applySlipToForm(slip);
+    $("main").scrollIntoView({behavior: "smooth", block: "start"});
+  }
+
+  function cancelEdit(){
+    editingSlipId = null;
+    setEditingBanner(false);
+    clearForm();
+  }
+
   // Events
   $("addBtn").addEventListener("click", () => {
-    const slip = readSlipFromForm(false);
+    const existing = editingSlipId ? state.slips.find(s => s.id === editingSlipId) : null;
+    const slip = readSlipFromForm(false, existing);
     if(!slip) return;
     if(slip.status === "DONE" && !slip.result) return alert("Pick a result for finished slips.");
-    state.slips.push(slip);
+    if(existing){
+      const idx = state.slips.findIndex(s => s.id === editingSlipId);
+      if(idx !== -1) state.slips[idx] = slip;
+      editingSlipId = null;
+      setEditingBanner(false);
+    }else{
+      state.slips.push(slip);
+    }
     save(); clearForm(); render();
   });
 
@@ -2076,12 +2272,16 @@
     if(!slip) return;
     slip.status = "PENDING"; slip.result = "";
     state.slips.push(slip);
+    editingSlipId = null;
+    setEditingBanner(false);
     save(); clearForm(); render();
   });
 
   $("clearBtn").addEventListener("click", () => {
     if(!confirm("Clear ALL slips?")) return;
     state.slips = [];
+    editingSlipId = null;
+    setEditingBanner(false);
     save(); render();
   });
 
@@ -2090,6 +2290,8 @@
     current.push({name:"", line:"", ou:""});
     renderPlayers(current);
   });
+
+  $("cancelEditBtn").addEventListener("click", cancelEdit);
 
   playersContainer().addEventListener("click", (e) => {
     if(!e.target.closest(".remove-player")) return;
@@ -2152,13 +2354,16 @@
     $("result").disabled = !done;
   });
 
-  $("creator").addEventListener("change", () => {
-    const analystId = $("analystId");
-    if(analystId && !analystId.value.trim()){
-      analystId.value = $("creator").value;
-      syncAnalystType(analystId.value);
-    }
-  });
+  const creatorField = $("creator");
+  if(creatorField){
+    creatorField.addEventListener("change", () => {
+      const analystId = $("analystId");
+      if(analystId && !analystId.value.trim()){
+        analystId.value = creatorField.value;
+        syncAnalystType(analystId.value);
+      }
+    });
+  }
 
   $("analystId").addEventListener("change", (e) => {
     syncAnalystType(e.target.value);
@@ -2188,6 +2393,7 @@
   $("actLoss").addEventListener("click", () => { if(activeSlipId){ setSlipStatusResult(activeSlipId,"DONE","L"); closeMenu(); }});
   $("actPush").addEventListener("click", () => { if(activeSlipId){ setSlipStatusResult(activeSlipId,"DONE","P"); closeMenu(); }});
   $("actSavePaid").addEventListener("click", () => { if(activeSlipId){ setPaidMult(activeSlipId, menuPaid.value); closeMenu(); }});
+  $("actEdit").addEventListener("click", () => { if(activeSlipId){ startEditSlip(activeSlipId); closeMenu(); }});
   $("actDelete").addEventListener("click", () => {
     if(!activeSlipId) return;
     if(!confirm("Delete this slip?")) return;
@@ -2200,9 +2406,9 @@
   $("date").value = todayISO();
   $("viewDate").value = todayISO();
   $("result").disabled = ($("status").value !== "DONE");
-  $("creator").value = "CHUY";
   $("analystId").value = DEFAULT_ANALYST_ID;
   syncAnalystType(DEFAULT_ANALYST_ID);
+  setEditingBanner(false);
   renderPlayers([]);
   render();
 
