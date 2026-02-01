@@ -3,2533 +3,882 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Slip Tracker — Multipliers</title>
+  <title>CHUYITO230 Daily Slip & Prop Tracker</title>
   <style>
     :root{
-      --bg: #0b0f19;
+      color-scheme: dark;
+      --bg: #070b13;
       --panel: rgba(255,255,255,0.06);
-      --panel2: rgba(255,255,255,0.08);
+      --panel-strong: rgba(255,255,255,0.09);
       --border: rgba(255,255,255,0.12);
-      --text: rgba(255,255,255,0.92);
-      --muted: rgba(255,255,255,0.65);
-      --muted2: rgba(255,255,255,0.45);
+      --text: rgba(255,255,255,0.9);
+      --muted: rgba(255,255,255,0.6);
+      --muted-2: rgba(255,255,255,0.45);
       --accent: #6ea8ff;
-      --accent2:#8b5cf6;
-      --good:#4ade80;
-      --bad:#fb7185;
-      --warn:#fbbf24;
-      --shadow: 0 18px 45px rgba(0,0,0,.35);
+      --accent-2: #8b5cf6;
+      --good: #4ade80;
+      --bad: #fb7185;
+      --warn: #facc15;
       --radius: 16px;
-      --radius2: 12px;
-      --pad: 14px;
+      --radius-sm: 12px;
+      --shadow: 0 16px 40px rgba(0,0,0,.45);
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
       --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
 
-    *{ box-sizing:border-box; }
-    html, body{ height:100%; }
+    *{ box-sizing: border-box; }
+    html, body{ height: 100%; }
     body{
-      margin:0;
+      margin: 0;
       font-family: var(--sans);
       background:
-        radial-gradient(900px 500px at 20% 0%, rgba(110,168,255,.18), transparent 60%),
-        radial-gradient(700px 500px at 85% 10%, rgba(139,92,246,.14), transparent 55%),
+        radial-gradient(900px 540px at 15% 0%, rgba(110,168,255,.12), transparent 60%),
+        radial-gradient(700px 420px at 85% 10%, rgba(139,92,246,.12), transparent 55%),
         var(--bg);
       color: var(--text);
-      overflow-x: hidden; /* important: prevents page-level horizontal scroll */
+      overflow-x: hidden;
     }
 
-    .wrap{ max-width: 1440px; margin: 16px auto 60px; padding: 0 14px; }
-    .skip-link{
-      position: absolute;
-      top: -40px;
-      left: 12px;
-      background: #111827;
-      color: var(--text);
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      z-index: 1001;
-      transition: top .15s ease;
-    }
-    .skip-link:focus{ top: 10px; }
-    .sr-only{
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      border: 0;
-    }
-
-    /* Topbar */
+    .wrap{ max-width: 1320px; margin: 24px auto 80px; padding: 0 16px; }
     .topbar{
-      position: sticky; top: 0; z-index: 50;
+      position: sticky;
+      top: 0;
+      z-index: 40;
       backdrop-filter: blur(10px);
-      background: linear-gradient(to bottom, rgba(11,15,25,.82), rgba(11,15,25,.35));
+      background: linear-gradient(to bottom, rgba(7,11,19,.9), rgba(7,11,19,.6));
       border-bottom: 1px solid var(--border);
-      padding: 10px 0;
     }
-    .topbar .inner{
-      max-width: 1200px; margin: 0 auto; padding: 0 14px;
-      display:flex; align-items:center; justify-content:space-between; gap: 12px;
+    .topbar-inner{
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 14px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
     }
-    .brand{ display:flex; flex-direction:column; gap:2px; min-width: 180px; }
-    .brand h1{ margin:0; font-size: 16px; letter-spacing:.2px; }
-    .brand .sub{ font-size: 12px; color: var(--muted); }
+    .brand{
+      display: grid;
+      gap: 6px;
+    }
+    .brand h1{ margin: 0; font-size: 20px; letter-spacing: .4px; }
+    .brand .sub{ color: var(--muted); font-size: 12px; }
 
-    .top-actions{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
+    .actions{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
 
-    body[data-ui-mode="ENTER_SLIP"] [data-ui="view"]{ display:none !important; }
-    body[data-ui-mode="VIEW"] [data-ui="enter"]{ display:none !important; }
-    body[data-ui-mode="ENTER_SLIP"] .grid{ grid-template-columns: minmax(0, 1fr); }
-    body[data-ui-mode="ENTER_SLIP"] .slip-entry-card{ width: 100%; }
-
-    /* Buttons & inputs */
     .btn{
-      appearance:none; border: 1px solid var(--border);
+      appearance: none;
+      border: 1px solid var(--border);
       background: rgba(255,255,255,0.06);
       color: var(--text);
-      padding: 10px 12px;
-      border-radius: 12px;
-      cursor:pointer;
-      transition: transform .06s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
-      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
       font-size: 13px;
-      line-height: 1;
-      display:inline-flex; gap:8px; align-items:center; justify-content:center;
-      min-height: 40px;
-      user-select:none;
-      white-space: nowrap;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
     }
-    .btn:hover{ background: rgba(255,255,255,0.10); }
+    .btn:hover{ background: rgba(255,255,255,0.12); }
     .btn:active{ transform: translateY(1px); }
-    .btn:focus-visible,
-    input:focus-visible,
-    select:focus-visible,
-    textarea:focus-visible,
-    .kebab:focus-visible{
-      outline: 2px solid rgba(110,168,255,.7);
-      outline-offset: 2px;
-    }
     .btn.primary{
-      background: linear-gradient(135deg, rgba(110,168,255,.95), rgba(139,92,246,.85));
-      border-color: rgba(255,255,255,0.18);
-      color: #0b0f19;
-    }
-    .btn.danger{
-      background: rgba(251,113,133,.13);
-      border-color: rgba(251,113,133,.25);
-      color: rgba(255,255,255,.95);
+      background: linear-gradient(135deg, rgba(110,168,255,.95), rgba(139,92,246,.9));
+      color: #05070d;
+      border-color: rgba(255,255,255,0.2);
     }
     .btn.ghost{ background: transparent; }
 
     input, select, textarea{
-      width:100%;
-      background: rgba(255,255,255,0.05);
+      width: 100%;
+      background: rgba(255,255,255,0.06);
       border: 1px solid var(--border);
       color: var(--text);
-      border-radius: 12px;
+      border-radius: var(--radius-sm);
       padding: 10px 12px;
-      outline: none;
-      min-height: 40px;
       font-size: 14px;
+      outline: none;
     }
-    textarea{ min-height: 72px; resize: vertical; }
+    textarea{ min-height: 80px; resize: vertical; }
     input:focus, select:focus, textarea:focus{
-      border-color: rgba(110,168,255,.55);
+      border-color: rgba(110,168,255,.6);
       box-shadow: 0 0 0 3px rgba(110,168,255,.18);
     }
-    label{ font-size: 12px; color: var(--muted); display:block; margin-bottom: 6px; }
+    label{ font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+
+    .grid{
+      display: grid;
+      grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.2fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+    @media (max-width: 1100px){
+      .grid{ grid-template-columns: 1fr; }
+    }
 
     .card{
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: var(--radius);
+      padding: 16px;
       box-shadow: var(--shadow);
-      padding: var(--pad);
-      min-width: 0; /* critical for grid overflow */
-    }
-
-    .slip-entry-card{
-      border-color: rgba(110,168,255,0.35);
-      background: linear-gradient(180deg, rgba(110,168,255,0.12), rgba(255,255,255,0.04));
-      padding: 18px;
-    }
-    .slip-entry-card .section-title h2{ font-size: 16px; }
-
-    .player-props-panel{
-      border: 1px solid rgba(110,168,255,0.35);
-      background: rgba(110,168,255,0.08);
-      border-radius: 16px;
-      padding: 14px;
-      margin-top: 6px;
-    }
-    .player-props-panel .section-title h2{ font-size: 15px; }
-
-    .player-prop-row{
-      display:grid;
-      gap: 10px;
-      grid-template-columns: 2.4fr 1.3fr 1fr 1fr 1fr 1fr;
-      align-items:end;
-      padding: 6px 0;
-      border-bottom: 1px dashed rgba(255,255,255,0.08);
-    }
-    .player-prop-row:last-child{ border-bottom: none; }
-    .player-prop-row .field{ min-width: 0; }
-    @media (max-width: 980px){
-      .player-prop-row{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-
-    .edit-banner{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 10px;
-      padding: 10px 12px;
-      margin: 10px 0 4px;
-      border-radius: 12px;
-      border: 1px solid rgba(110,168,255,0.35);
-      background: rgba(110,168,255,0.12);
-      font-size: 12px;
-    }
-
-    /* Responsive layout */
-    .grid{
-      display:grid; gap: 16px;
-      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-      margin-top: 16px;
-      align-items:start;
-    }
-    @media (max-width: 1180px){
-      .grid{ grid-template-columns: 1fr; }
-    }
-
-    .row{
-      display:grid; gap: 10px;
-      grid-template-columns: repeat(12, minmax(0, 1fr));
-    }
-    .col-2{ grid-column: span 2; }
-    .col-3{ grid-column: span 3; }
-    .col-4{ grid-column: span 4; }
-    .col-6{ grid-column: span 6; }
-    .col-12{ grid-column: span 12; }
-
-    @media (max-width: 980px){
-      .row{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
-      .col-2,.col-3,.col-4,.col-6{ grid-column: span 6; }
-    }
-
-    .left-col{
-      display:grid;
-      gap: 14px;
-    }
-    .left-secondary{
-      display:grid;
-      gap: 14px;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    }
-    .right-col{
-      display:grid;
-      gap: 14px;
-    }
-    .analyst-panel{
-      position: sticky;
-      top: 84px;
     }
 
     .section-title{
-      display:flex; align-items:center; justify-content:space-between;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 10px;
-      margin-bottom: 10px;
-      flex-wrap:wrap;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
     }
-    .section-title h2{ margin:0; font-size: 14px; letter-spacing:.2px; }
+    .section-title h2{ margin: 0; font-size: 15px; }
     .hint{ color: var(--muted); font-size: 12px; }
 
-    /* KPIs */
-    .kpis{
-      display:grid; gap: 10px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      margin-top: 10px;
+    .row{
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
     }
-    @media (min-width: 560px){
-      .kpis{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .col-3{ grid-column: span 3; }
+    .col-4{ grid-column: span 4; }
+    .col-6{ grid-column: span 6; }
+    .col-8{ grid-column: span 8; }
+    .col-12{ grid-column: span 12; }
+    @media (max-width: 980px){
+      .row{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .col-3,.col-4,.col-6,.col-8{ grid-column: span 6; }
+    }
+
+    .kpis{
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    @media (max-width: 900px){
+      .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     .kpi{
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.04);
-      border-radius: 14px;
       padding: 12px;
-      min-width: 0;
-    }
-    .kpi-section{
-      display:grid;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .kpi-section-title{
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      color: var(--muted2);
-    }
-
-    .profile-grid{
-      display:grid;
-      gap: 10px;
-      grid-template-columns: 1fr;
-    }
-    .profile-card{
+      border-radius: var(--radius-sm);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px;
-      background: rgba(255,255,255,0.04);
-      display:flex;
-      flex-direction:column;
-      gap: 10px;
-      min-width: 0;
-    }
-    .profile-card h3{
-      margin: 0;
-      font-size: 14px;
-      letter-spacing: .2px;
-    }
-    .profile-meta{
-      color: var(--muted);
-      font-size: 12px;
-    }
-    .profile-stats{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-    }
-    .profile-section{
-      display:flex;
-      flex-direction:column;
-      gap: 8px;
-    }
-    .profile-section-title{
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      color: var(--muted2);
-    }
-    .profile-stat{
       background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px 10px;
     }
-    .profile-stat .k{ font-size: 11px; color: var(--muted2); }
-    .profile-stat .v{ font-weight: 800; margin-top: 4px; }
-    .profile-list{
-      display:grid;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .profile-pill{
-      display:inline-flex;
-      align-items:center;
-      gap: 6px;
-      border-radius: 999px;
-      padding: 2px 8px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid var(--border);
-      font-size: 11px;
-      color: var(--text);
-    }
-    .profile-chart{
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px;
-      background: rgba(255,255,255,0.03);
-    }
-    .profile-chart svg{
-      width: 100%;
-      height: 80px;
-      display:block;
-    }
-    .kpi .k{ font-size: 12px; color: var(--muted); }
-    .kpi .v{ margin-top: 6px; font-size: 18px; font-weight: 900; }
+    .kpi .k{ font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: .12em; }
+    .kpi .v{ font-size: 18px; font-weight: 800; margin-top: 6px; }
     .pos{ color: var(--good); }
     .neg{ color: var(--bad); }
-    .neu{ color: var(--warn); }
-    .bankline{ margin-top: 10px; color: var(--muted); font-size: 12px; }
-    .chart-wrap{
-      margin-top: 12px;
-      padding: 10px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.03);
-    }
-    #bankrollChart{
-      width: 100%;
-      height: 180px;
-      display: block;
-    }
 
-    .mono{ font-family: var(--mono); }
-
-    /* Pills */
-    .pill{
-      display:inline-flex; align-items:center; gap: 6px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.05);
-      font-size: 12px;
-      color: rgba(255,255,255,0.85);
-      white-space: nowrap;
-    }
-    .pill.pending{ border-color: rgba(251,191,36,.22); background: rgba(251,191,36,.10); }
-    .pill.win{ border-color: rgba(74,222,128,.22); background: rgba(74,222,128,.10); }
-    .pill.loss{ border-color: rgba(251,113,133,.22); background: rgba(251,113,133,.10); }
-    .pill.push{ border-color: rgba(110,168,255,.22); background: rgba(110,168,255,.10); }
-
-    /* Kebab actions */
-    .kebab{
-      width: 38px; height: 38px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.05);
-      color: rgba(255,255,255,0.88);
-      cursor:pointer;
-      display:flex; align-items:center; justify-content:center;
-      font-size: 18px;
-      line-height: 1;
-    }
-    .kebab:hover{ background: rgba(255,255,255,0.10); }
-
-    .muteline{ color: var(--muted); font-size: 12px; margin-top: 8px; }
-
-    .slip-log{
-      display:flex;
-      flex-direction:column;
+    .calendar{
+      display: flex;
       gap: 10px;
-      overflow-x: hidden;
+      align-items: center;
+      flex-wrap: wrap;
     }
-    .slip-row{
+    .calendar .btn{ min-height: 38px; }
+    .calendar input[type="date"]{ min-width: 180px; }
+
+    .slip-list{
+      display: grid;
+      gap: 12px;
+    }
+    .slip-item{
+      border-radius: 14px;
       border: 1px solid var(--border);
       background: rgba(255,255,255,0.04);
-      border-radius: 16px;
       padding: 12px;
-      display:flex;
-      flex-direction:column;
+      display: grid;
       gap: 10px;
-      cursor:pointer;
     }
-    .slip-row-top{
-      display:flex;
+    .slip-head{
+      display: flex;
+      flex-wrap: wrap;
       gap: 10px;
-      align-items:flex-start;
-      justify-content:space-between;
-      flex-wrap:wrap;
+      align-items: center;
+      justify-content: space-between;
     }
-    .slip-summary{
-      display:flex;
-      flex-wrap:wrap;
-      gap: 12px;
-      flex: 1;
-      min-width: 0;
-    }
-    .slip-cell{
-      flex: 1 1 120px;
-      min-width: 110px;
-    }
-    .slip-cell .k{
-      font-size: 11px;
-      letter-spacing: .3px;
-      text-transform: uppercase;
-      color: var(--muted2);
-    }
-    .slip-cell .v{
-      margin-top: 4px;
-      font-weight: 700;
-      font-size: 13px;
-      color: var(--text);
-      white-space: normal;
-      word-break: break-word;
-    }
-    .slip-props{
-      display:none;
-      flex-direction:column;
-      gap: 8px;
-      padding-left: 14px;
-      border-left: 2px solid rgba(110,168,255,0.35);
+    .pill{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
       font-size: 12px;
-      color: rgba(255,255,255,0.78);
-    }
-    .slip-props .prop-name{
-      font-weight: 700;
-      color: rgba(255,255,255,0.9);
-    }
-    .slip-props .prop-detail{
-      color: rgba(255,255,255,0.65);
-      margin-top: 2px;
-    }
-    .checkline{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      min-height: 40px;
-      padding-top: 22px;
-      color: var(--text);
-      font-size: 13px;
-      font-weight: 600;
-    }
-    .req{ color: var(--warn); font-weight: 700; margin-left: 4px; }
-    .checkline input{
-      width: auto;
-      min-height: auto;
-    }
-    .slip-row[data-expanded="true"] .slip-props{ display:flex; }
-
-    /* Floating menu / bottom sheet */
-    .menu{
-      position: fixed;
-      z-index: 1000;
-      width: 330px;
-      border-radius: 14px;
       border: 1px solid rgba(255,255,255,0.16);
-      background: rgba(17,24,39,.88);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 20px 55px rgba(0,0,0,.55);
-      padding: 10px;
-      display:none;
-      max-width: calc(100vw - 20px);
+      background: rgba(255,255,255,0.08);
     }
-    .menu .title{
-      display:flex; align-items:center; justify-content:space-between;
+    .pill.win{ border-color: rgba(74,222,128,.35); color: var(--good); }
+    .pill.loss{ border-color: rgba(251,113,133,.35); color: var(--bad); }
+    .pill.pending{ border-color: rgba(250,204,21,.35); color: var(--warn); }
+
+    .slip-meta{
+      display: grid;
       gap: 8px;
-      padding: 6px 6px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.10);
-      margin-bottom: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      font-size: 12px;
+      color: var(--muted);
     }
-    .menu .title .t{ font-weight: 900; font-size: 13px; }
-    .menu .title .x{
-      border:none; background: transparent; color: rgba(255,255,255,.85);
-      font-size: 18px; cursor:pointer;
-    }
-    .menu .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .menu .grid1{ display:grid; gap: 8px; }
-    .menu small{ color: rgba(255,255,255,0.65); }
-    .menu .line{ border-top: 1px solid rgba(255,255,255,0.10); margin: 10px 0; }
+    .slip-meta strong{ color: var(--text); }
 
-    /* bottom sheet on mobile */
-    @media (max-width: 600px){
-      .menu{
-        left: 10px !important;
-        right: 10px !important;
-        bottom: 10px !important;
-        top: auto !important;
-        width: auto !important;
-        border-radius: 18px;
-      }
+    .props{
+      border-left: 2px solid rgba(110,168,255,.4);
+      padding-left: 10px;
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
     }
+    .prop{ display: flex; justify-content: space-between; gap: 8px; }
+    .prop .name{ font-weight: 700; }
 
-    @media (prefers-reduced-motion: reduce){
-      *{
-        scroll-behavior: auto !important;
-        transition-duration: 0.001ms !important;
-      }
+    .chart-wrap{
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      padding: 12px;
+      background: rgba(255,255,255,0.04);
+    }
+    canvas{ width: 100%; height: 220px; display: block; }
+
+    .info-box{
+      display: grid;
+      gap: 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      padding: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .mono{ font-family: var(--mono); }
+
+    .muteline{ color: var(--muted-2); font-size: 12px; }
+    .actions-inline{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tag{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 11px;
+      color: var(--muted);
     }
   </style>
 </head>
-
-<body data-ui-mode="VIEW">
-  <a class="skip-link" href="#main">Skip to content</a>
+<body>
   <div class="topbar">
-    <div class="inner">
+    <div class="topbar-inner">
       <div class="brand">
-        <h1>Slip Tracker</h1>
-        <div class="sub">player props • multipliers • pending slips • import/export</div>
+        <h1>CHUYITO230 Tracker</h1>
+        <div class="sub">Daily slips + prop hits, unit math, follower bankroll projection.</div>
       </div>
-      <div class="top-actions">
-        <button class="btn primary" id="enterSlipBtn" data-ui="view">+ Enter Slip</button>
-        <button class="btn" id="exportBtn" data-ui="view">Export TXT</button>
-        <button class="btn" id="exportCsvBtn" data-ui="view">Export CSV</button>
-        <label class="btn ghost" style="gap:10px; padding:10px 12px;" data-ui="view">
+      <div class="actions">
+        <button class="btn primary" id="openEntry">+ Add Slip</button>
+        <button class="btn" id="exportTxt">Export TXT</button>
+        <label class="btn ghost" style="gap:8px;">
           Import
-          <input id="importFile" type="file" accept=".txt,.json" style="display:none;">
+          <input id="importTxt" type="file" accept=".txt,.json" hidden>
         </label>
+        <button class="btn" id="clearAll">Reset All</button>
       </div>
     </div>
   </div>
 
-  <main class="wrap" id="main">
+  <main class="wrap">
     <div class="grid">
-      <!-- Left -->
       <div class="left-col">
-        <div class="card slip-entry-card" data-ui="enter">
+        <section class="card">
           <div class="section-title">
-            <h2>Enter Slip</h2>
-            <span class="hint">Add as Pending, finish later</span>
+            <h2>Daily Calendar</h2>
+            <span class="hint">Track every day with a calendar view.</span>
           </div>
-          <div class="edit-banner" id="editBanner" hidden>
-            <span><strong>Editing slip</strong> — changes will update the selected slip.</span>
-            <button class="btn ghost" id="cancelEditBtn" type="button">Cancel</button>
+          <div class="calendar">
+            <button class="btn" id="prevDay">◀</button>
+            <input type="date" id="dayPicker" />
+            <button class="btn" id="nextDay">▶</button>
+            <button class="btn ghost" id="todayBtn">Today</button>
           </div>
+          <div class="muteline" id="daySummary"></div>
+        </section>
 
-          <div class="row" role="group" aria-label="Add slip form">
+        <section class="card" id="entryCard" hidden>
+          <div class="section-title">
+            <h2>Add / Edit Slip</h2>
+            <span class="hint">Units = 5% of bankroll. 1 unit @ 3x = +3 units if it hits.</span>
+          </div>
+          <div class="row">
             <div class="col-3">
-              <label for="date">Date</label>
-              <input id="date" type="date" />
+              <label for="slipDate">Date</label>
+              <input type="date" id="slipDate" />
             </div>
             <div class="col-3">
-              <label for="status">Status</label>
-              <select id="status" aria-describedby="statusHelp">
+              <label for="slipStatus">Status</label>
+              <select id="slipStatus">
                 <option value="PENDING">Pending</option>
                 <option value="DONE">Finished</option>
               </select>
-              <div class="muteline" id="statusHelp">Set to Finished to unlock the result field.</div>
             </div>
             <div class="col-3">
-              <label for="result">Result (only if finished)</label>
-              <select id="result" aria-describedby="resultHelp">
-                <option value="W">Win</option>
-                <option value="L">Loss</option>
-                <option value="P">Push</option>
+              <label for="slipResult">Result</label>
+              <select id="slipResult">
+                <option value="WIN">Win</option>
+                <option value="LOSS">Loss</option>
+                <option value="PUSH">Push</option>
               </select>
-              <div class="muteline" id="resultHelp">Disabled unless Status is Finished.</div>
-            </div>
-            <div class="col-3">
-              <label for="app">App (optional)</label>
-              <input id="app" type="text" list="appList" placeholder="PrizePicks" />
-            </div>
-            <div class="col-3">
-              <label for="league">League (optional)</label>
-              <input id="league" type="text" list="leagueList" placeholder="NBA" />
-            </div>
-            <div class="col-3">
-              <label for="oddsType">Odds Type (optional)</label>
-              <select id="oddsType">
-                <option value="">Select</option>
-                <option value="standard">Standard</option>
-                <option value="boost">Boost</option>
-                <option value="promo">Promo</option>
-              </select>
-            </div>
-            <div class="col-3">
-              <label for="analystId">Analyst ID</label>
-              <select id="analystId"></select>
-            </div>
-            <div class="col-3">
-              <label for="analystType">Analyst Type</label>
-              <select id="analystType" disabled>
-                <option value="VIP">VIP</option>
-                <option value="Tryout">Tryout</option>
-                <option value="Own">Own</option>
-              </select>
-              <div class="muteline">Auto-set from analyst ID.</div>
             </div>
             <div class="col-3">
               <label for="slipType">Slip Type</label>
-              <select id="slipType">
-                <option value="">Auto</option>
-                <option value="Straight">Straight</option>
-                <option value="Parlay">Parlay</option>
-              </select>
+              <input id="slipType" placeholder="Parlay / Straight" />
             </div>
             <div class="col-3">
-              <label for="legsCount">Legs Count</label>
-              <input id="legsCount" type="number" min="1" step="1" placeholder="2" />
-            </div>
-
-            <div class="col-3">
-              <label class="sr-only" for="tailed">I Tailed This Slip</label>
-              <label class="checkline" for="tailed">
-                <input id="tailed" type="checkbox" checked />
-                I Tailed This Slip
-              </label>
-            </div>
-
-            <div class="col-3" id="stakeWrap">
-              <label for="stake">Stake ($)</label>
-              <input id="stake" type="number" step="0.01" placeholder="50" min="0.01" inputmode="decimal" />
-
+              <label for="unitStake">Units Risked</label>
+              <input id="unitStake" type="number" step="0.1" min="0" placeholder="0.5" />
             </div>
             <div class="col-3">
-              <label for="mult">Listed Multiplier (x)</label>
-              <input id="mult" type="number" step="0.01" placeholder="2.0" min="0.01" inputmode="decimal" />
+              <label for="multiplier">Multiplier (x)</label>
+              <input id="multiplier" type="number" step="0.01" min="0" placeholder="3" />
             </div>
             <div class="col-3">
-              <label for="paid">Paid Multiplier (optional)</label>
-              <input id="paid" type="number" step="0.01" placeholder="1.8" min="0" inputmode="decimal" />
+              <label for="slipBook">Sportsbook/App</label>
+              <input id="slipBook" placeholder="PrizePicks" />
             </div>
             <div class="col-3">
-              <label for="tag">Tag (optional)</label>
-              <input id="tag" type="text" list="tagList" placeholder="Parlay" />
-            </div>
-            <div class="col-3">
-              <label for="group">Group / Session (optional)</label>
-              <input id="group" type="text" list="groupList" placeholder="Weekend slate" />
-            </div>
-
-            <div class="col-6">
-              <label for="slipId">Slip ID (optional)</label>
-              <input id="slipId" type="text" list="slipIdList" placeholder="ABC123" />
+              <label for="slipNotes">Notes</label>
+              <input id="slipNotes" placeholder="3 leg NBA" />
             </div>
             <div class="col-12">
-              <div class="player-props-panel">
-                <div class="section-title">
-                  <h2>Players / Props</h2>
-                  <button class="btn" id="addPlayerBtn" type="button">Add Player</button>
-                </div>
-                <div id="players" style="display:grid; gap:10px;"></div>
-              </div>
-            </div>
-
-            <div class="col-12" style="display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="btn primary" id="addBtn" style="flex: 1 1 220px;">Save Slip</button>
-              <button class="btn" id="cancelEntryBtn" type="button" style="flex: 1 1 220px;">Cancel</button>
+              <label>Props (one per line: Player — Prop — Result)</label>
+              <textarea id="propsInput" placeholder="Shai Gilgeous-Alexander — O 29.5 PTS — Hit"></textarea>
             </div>
           </div>
-
-          <div class="muteline">
-            Finished payout: <span class="mono">stake × (paid x if set else listed x)</span>. Pending slips don’t affect profit.
+          <div class="actions-inline" style="margin-top:12px;">
+            <button class="btn primary" id="saveSlip">Save Slip</button>
+            <button class="btn" id="cancelSlip">Cancel</button>
           </div>
+        </section>
 
-          <datalist id="appList"></datalist>
-          <datalist id="leagueList"></datalist>
-          <datalist id="tagList"></datalist>
-          <datalist id="groupList"></datalist>
-          <datalist id="slipIdList"></datalist>
-        </div>
-
-        <div class="card slip-log-card" data-ui="view">
+        <section class="card">
           <div class="section-title">
-            <h2>Slip Log</h2>
-            <span class="hint">Click a slip to view player props</span>
+            <h2>Slips on <span id="dayLabel"></span></h2>
+            <span class="hint">Tap a slip to edit or update the result.</span>
           </div>
-          <div class="slip-log" id="slipLog" role="list"></div>
-        </div>
-
-        <div class="left-secondary" data-ui="view">
-          <div class="card">
-            <div class="section-title">
-              <h2>KPIs</h2>
-              <span class="hint">finished slips only</span>
-            </div>
-            <div class="row">
-              <div class="col-6">
-                <label for="viewDate">View Date</label>
-                <input id="viewDate" type="date" />
-              </div>
-              <div class="col-6">
-                <label for="bankroll">Starting Bankroll</label>
-                <input id="bankroll" type="number" step="0.01" placeholder="1000" inputmode="decimal" />
-                <div class="muteline" id="bankrollLockNote"></div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-6">
-                <label class="sr-only" for="resetBankroll">Reset Bankroll</label>
-                <button class="btn danger" id="resetBankroll" type="button">Reset Bankroll</button>
-                <div class="muteline">Clears tailed profit history and sets a new starting bankroll.</div>
-              </div>
-            </div>
-            <div class="kpi-section" role="status" aria-live="polite">
-              <div class="kpi-section-title">My Results (Tailed Slips Only)</div>
-              <div class="kpis" id="kpisPersonal"></div>
-            </div>
-            <div class="kpi-section" role="status" aria-live="polite">
-              <div class="kpi-section-title">Discord Results (All Slips, Flat Stake Simulation)</div>
-              <div class="kpis" id="kpisDiscord"></div>
-            </div>
-            <div class="bankline" id="bankrollLine" role="status" aria-live="polite"></div>
-            <div class="chart-wrap">
-              <canvas id="bankrollChart" width="640" height="200"></canvas>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="section-title">
-              <h2>Filters</h2>
-              <span class="hint">find slips fast</span>
-            </div>
-            <div class="row">
-              <div class="col-6">
-                <label for="filterStatus">Status</label>
-                <select id="filterStatus">
-                  <option value="ALL">All</option>
-                  <option value="PENDING">Pending</option>
-                  <option value="DONE">Finished</option>
-                </select>
-              </div>
-              <div class="col-6">
-                <label for="sortBy">Sort</label>
-                <select id="sortBy">
-                  <option value="date_desc">Date (new → old)</option>
-                  <option value="date_asc">Date (old → new)</option>
-                  <option value="stake_desc">Stake (high → low)</option>
-                  <option value="stake_asc">Stake (low → high)</option>
-                </select>
-              </div>
-              <div class="col-6">
-                <label for="filterDate">Show only date</label>
-                <select id="filterDate">
-                  <option value="ALL">All dates</option>
-                </select>
-              </div>
-              <div class="col-6">
-                <label for="search">Search</label>
-                <input id="search" type="text" placeholder="type to filter..." />
-              </div>
-              <div class="col-6">
-                <label for="filterGroup">Group / Session</label>
-                <select id="filterGroup">
-                  <option value="ALL">All groups</option>
-                </select>
-              </div>
-              <div class="col-12">
-                <label for="autosave">Auto-save</label>
-                <select id="autosave">
-                  <option value="on">On (recommended)</option>
-                  <option value="off">Off (manual export only)</option>
-                </select>
-                <div class="muteline">If Auto-save is off, Export TXT so you never lose your log.</div>
-              </div>
-            </div>
-          </div>
-        </div>
+          <div class="slip-list" id="slipList"></div>
+        </section>
       </div>
 
-      <!-- Right -->
-      <div class="right-col" data-ui="view">
-        <div class="card analyst-panel">
+      <div class="right-col">
+        <section class="card">
           <div class="section-title">
-            <h2>Analyst Profile</h2>
-            <span class="hint">finished slips only</span>
+            <h2>Daily + Overall Stats</h2>
+            <span class="hint">Unit math with 5% bankroll sizing.</span>
+          </div>
+          <div class="kpis" id="kpiGrid"></div>
+          <div class="info-box" style="margin-top:12px;">
+            <div><strong>Unit Rule:</strong> 1 unit = 5% of bankroll.</div>
+            <div><strong>Win math:</strong> units × multiplier = units won.</div>
+            <div><strong>Loss math:</strong> -units risked.</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            <h2>Follower Bankroll Projection</h2>
+            <span class="hint">Show how followers would perform.</span>
           </div>
           <div class="row">
             <div class="col-6">
-              <label for="analystPrimary">Primary Analyst</label>
-              <select id="analystPrimary"></select>
+              <label for="followerBank">Follower Bankroll ($)</label>
+              <input id="followerBank" type="number" min="0" step="1" value="200" />
             </div>
             <div class="col-6">
-              <label for="analystCompare">Compare To</label>
-              <select id="analystCompare"></select>
+              <label for="bankrollStart">Your Starting Bankroll ($)</label>
+              <input id="bankrollStart" type="number" min="0" step="1" value="1000" />
+            </div>
+            <div class="col-12">
+              <div class="info-box" id="bankrollSummary"></div>
             </div>
           </div>
-          <div class="profile-grid" id="profileGrid"></div>
-        </div>
+        </section>
+
+        <section class="card">
+          <div class="section-title">
+            <h2>Charts</h2>
+            <span class="hint">Live charts update with each slip.</span>
+          </div>
+          <div class="chart-wrap">
+            <div class="muteline">Cumulative Units (all time)</div>
+            <canvas id="unitsChart" width="600" height="240"></canvas>
+          </div>
+          <div class="chart-wrap" style="margin-top:12px;">
+            <div class="muteline">Daily Units (last 14 days)</div>
+            <canvas id="dailyChart" width="600" height="240"></canvas>
+          </div>
+        </section>
       </div>
     </div>
   </main>
 
-  <!-- Floating actions menu -->
-  <div class="menu" id="menu">
-    <div class="title">
-      <div class="t" id="menuTitle">Slip Actions</div>
-      <button class="x" id="menuClose" title="Close">×</button>
-    </div>
+  <script>
+    const DEFAULT_STATE = {
+      slips: [],
+      selectedDate: todayISO(),
+      bankrollStart: 1000,
+      followerBank: 200
+    };
 
-    <div class="grid1">
-      <small>Status / result</small>
-      <div class="grid2">
-        <button class="btn" id="actPending">Mark Pending</button>
-        <button class="btn" id="actPush">Mark Push</button>
-        <button class="btn" id="actWin">Mark Win</button>
-        <button class="btn" id="actLoss">Mark Loss</button>
-      </div>
+    let state = loadState();
+    let editingId = null;
 
-      <div class="line"></div>
+    const $ = (id) => document.getElementById(id);
 
-      <small>Paid multiplier (optional)</small>
-      <div class="grid2">
-        <input id="menuPaid" type="number" step="0.01" placeholder="e.g. 1.5" />
-        <button class="btn" id="actSavePaid">Save Paid x</button>
-      </div>
-
-      <div class="line"></div>
-
-      <button class="btn" id="actEdit">Edit Slip</button>
-
-      <div class="line"></div>
-
-      <button class="btn danger" id="actDelete">Delete Slip</button>
-    </div>
-  </div>
-
-<script>
-(() => {
-  const STORAGE_KEY = "slip_tracker_multipliers_pro_v2";
-  const SIMULATED_STAKE = 100;
-  const PRESET_ANALYSTS = [
-    {id: "Jay", type: "VIP"},
-    {id: "Ochan", type: "VIP"},
-    {id: "Envixity", type: "VIP"},
-    {id: "Fluid", type: "Tryout"},
-    {id: "Pops", type: "Tryout"},
-    {id: "Chuy", type: "Own"},
-    {id: "Combined", type: "Own"}
-  ];
-  const DEFAULT_ANALYST_ID = "Chuy";
-  const PRESET_ANALYST_MAP = new Map(
-    PRESET_ANALYSTS.map(({id, type}) => [id.toUpperCase(), {id, type}])
-  );
-
-  let state = {
-    startingBankroll: 0,
-    autosave: "on",
-    kpiView: "overall", // overall | creators
-    analystPrimary: "",
-    analystCompare: "",
-    slips: []
-  };
-  let uiMode = "VIEW"; // VIEW | ENTER_SLIP
-  let expandedSlipId = null;
-  let pendingScrollId = null;
-
-  const $ = (id) => document.getElementById(id);
-
-  const num = (v) => {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : 0;
-  };
-
-  const todayISO = () => {
-    const d = new Date();
-    const p = (x) => String(x).padStart(2,'0');
-    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
-  };
-
-  const fmtMoney = (n) => num(n).toLocaleString(undefined, {style:"currency", currency:"USD"});
-  const fmtPct = (n) => (Number.isFinite(n) ? (n*100).toFixed(1)+"%" : "0.0%");
-
-  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
-
-  const escapeHtml = (s) => String(s||"")
-    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
-
-  const genId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
-
-  const resolveCreator = (creator, analystId) => {
-    const creatorUpper = String(creator || "").toUpperCase();
-    const analystUpper = String(analystId || "").toUpperCase();
-    if(creator && creatorUpper !== "CHUY") return creator;
-    if(analystId && analystUpper !== "CHUY") return analystId;
-    return creator || analystId || "CHUY";
-  };
-
-  const parseTags = (value) => {
-    if(!value) return [];
-    return value.split(",").map(tag => tag.trim()).filter(Boolean);
-  };
-
-  const normalizeTags = (slip) => {
-    const tags = Array.isArray(slip.tags) ? slip.tags : parseTags(slip.tags);
-    if(tags.length) return tags;
-    return parseTags(slip.tag);
-  };
-
-  const getPresetAnalystType = (analystId) => {
-    const entry = PRESET_ANALYST_MAP.get(String(analystId || "").toUpperCase());
-    return entry ? entry.type : null;
-  };
-
-  const playersContainer = () => $("players");
-  const playerRowTemplate = (player = {}, index = 0) => `
-    <div class="player-prop-row" data-player-row>
-      <div class="field">
-        <label>Player ${index + 1}</label>
-        <input type="text" class="player-name" placeholder="Player name" value="${escapeHtml(player.name || "")}" />
-      </div>
-      <div class="field">
-        <label>Prop Category<span class="req">*</span></label>
-        <select class="player-category" required>
-          <option value="">Select</option>
-          <option value="Points" ${player.category === "Points" ? "selected" : ""}>Points</option>
-          <option value="Rebounds" ${player.category === "Rebounds" ? "selected" : ""}>Rebounds</option>
-          <option value="Assists" ${player.category === "Assists" ? "selected" : ""}>Assists</option>
-          <option value="PRA" ${player.category === "PRA" ? "selected" : ""}>PRA</option>
-          <option value="Kills" ${player.category === "Kills" ? "selected" : ""}>Kills</option>
-          <option value="Headshots" ${player.category === "Headshots" ? "selected" : ""}>Headshots</option>
-          <option value="Other" ${player.category === "Other" ? "selected" : ""}>Other</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Prop Line</label>
-        <input type="number" class="player-line" step="0.1" placeholder="15.5" value="${escapeHtml(player.line || "")}" />
-      </div>
-      <div class="field">
-        <label>O/U</label>
-        <select class="player-ou">
-          <option value="">Select</option>
-          <option value="Over" ${player.ou === "Over" ? "selected" : ""}>Over</option>
-          <option value="Under" ${player.ou === "Under" ? "selected" : ""}>Under</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Final</label>
-        <input type="number" class="player-final" step="0.1" placeholder="18" value="${escapeHtml(player.final || "")}" />
-      </div>
-      <div class="field">
-        <label>Outcome</label>
-        <select class="player-outcome">
-          <option value="">Auto</option>
-          <option value="Win" ${player.outcome === "Win" ? "selected" : ""}>Win</option>
-          <option value="Loss" ${player.outcome === "Loss" ? "selected" : ""}>Loss</option>
-          <option value="Push" ${player.outcome === "Push" ? "selected" : ""}>Push</option>
-        </select>
-        <button class="btn danger remove-player" type="button" title="Remove player" style="margin-top:10px; width:100%;">Remove</button>
-      </div>
-    </div>
-  `;
-
-  function renderPlayers(players){
-    const container = playersContainer();
-    if(!container) return;
-    const list = players.length ? players : [{name:"", category:"", line:"", ou:""}];
-    container.innerHTML = list.map((player, idx) => playerRowTemplate(player, idx)).join("");
-  }
-
-  function readPlayersDraft(){
-    const container = playersContainer();
-    if(!container) return [];
-    return Array.from(container.querySelectorAll("[data-player-row]")).map(row => ({
-      name: row.querySelector(".player-name")?.value.trim() || "",
-      category: row.querySelector(".player-category")?.value || "",
-      line: row.querySelector(".player-line")?.value.trim() || "",
-      ou: row.querySelector(".player-ou")?.value || "",
-      final: row.querySelector(".player-final")?.value.trim() || "",
-      outcome: row.querySelector(".player-outcome")?.value || ""
-    }));
-  }
-
-  function derivePlayerOutcome(player){
-    const line = Number(player.line);
-    const final = Number(player.final);
-    if(!player.final || !Number.isFinite(line) || !Number.isFinite(final) || !player.ou) return "";
-    if(final === line) return "Push";
-    if(player.ou === "Over") return final > line ? "Win" : "Loss";
-    if(player.ou === "Under") return final < line ? "Win" : "Loss";
-    return "";
-  }
-
-  function formatPlayerDisplay(player){
-    const outcome = player.outcome || derivePlayerOutcome(player);
-    const finalPart = player.final ? ` (Final ${player.final}${outcome ? ` • ${outcome}` : ""})` : (outcome ? ` (${outcome})` : "");
-    const categoryPart = player.category ? ` • ${player.category}` : "";
-    return `${player.name} ${player.ou} ${player.line}${categoryPart}${finalPart}`;
-  }
-
-  function readPlayersFromForm(){
-    const draft = readPlayersDraft();
-    const players = [];
-    for(const player of draft){
-      const {name, category, line, ou, final, outcome} = player;
-      if(!name && !category && !line && !ou && !final && !outcome) continue;
-      if(!name || !category || !line || !ou){
-        alert("Each player row needs a name, prop category, prop line, and over/under selection.");
-        return null;
-      }
-      const computedOutcome = outcome || derivePlayerOutcome({line, final, ou});
-      players.push({
-        name,
-        category,
-        line,
-        ou,
-        final,
-        outcome: computedOutcome
-      });
+    function todayISO(){
+      return new Date().toISOString().slice(0,10);
     }
-    return players;
-  }
 
-  function setUiMode(mode){
-    uiMode = mode === "ENTER_SLIP" ? "ENTER_SLIP" : "VIEW";
-    document.body.dataset.uiMode = uiMode;
-  }
-
-  function syncTailedInput(tailed){
-    const stakeWrap = $("stakeWrap");
-    const stakeInput = $("stake");
-    if(!stakeWrap || !stakeInput) return;
-    stakeWrap.style.display = tailed ? "" : "none";
-    stakeInput.disabled = !tailed;
-    if(!tailed) stakeInput.value = "";
-  }
-
-  function load(){
-    try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return;
-      const parsed = JSON.parse(raw);
-      if(!parsed || typeof parsed !== "object") return;
-      state.startingBankroll = num(parsed.startingBankroll);
-      state.autosave = parsed.autosave === "off" ? "off" : "on";
-      state.kpiView = parsed.kpiView === "creators" ? "creators" : "overall";
-      state.analystPrimary = parsed.analystPrimary || "";
-      state.analystCompare = parsed.analystCompare || "";
-      state.slips = Array.isArray(parsed.slips) ? parsed.slips : [];
-      state.slips = state.slips.map(s => {
-        const tailed = s.tailed === undefined ? num(s.stake) > 0 : !!s.tailed;
-        const stake = tailed ? num(s.stake) : null;
+    function loadState(){
+      const saved = localStorage.getItem("chuyito-tracker");
+      if(!saved) return {...DEFAULT_STATE};
+      try{
+        const parsed = JSON.parse(saved);
         return {
-          id: s.id || genId(),
-          createdAt: s.createdAt || Date.now(),
-          date: s.date || "",
-          status: s.status === "DONE" ? "DONE" : "PENDING",
-          result: s.result || "",
-          app: s.app || "",
-          league: s.league || "",
-          oddsType: s.oddsType || "",
-          creator: resolveCreator(s.creator, s.analystId),
-          analystId: s.analystId || s.creator || "CHUY",
-          analystType: s.analystType || deriveAnalystType(s.analystId || s.creator || "CHUY"),
-          slipType: s.slipType || ((Array.isArray(s.players) ? s.players.length : 0) > 1 ? "Parlay" : "Straight"),
-          legsCount: num(s.legsCount) || ((Array.isArray(s.players) ? s.players.length : 0) || 1),
-          marketType: s.marketType || "",
-          confidence: (Number.isFinite(Number(s.confidence)) ? num(s.confidence) : null),
-          tailed,
-          stake,
-          mult: num(s.mult),
-          oddsDecimal: num(s.oddsDecimal) || num(s.mult),
-          paidMult: (s.paidMult === undefined ? "" : s.paidMult),
-          tag: s.tag || "",
-          tags: Array.isArray(s.tags) ? s.tags : parseTags(s.tags || s.tag || ""),
-          group: s.group || "",
-          slipId: s.slipId || "",
-          players: Array.isArray(s.players)
-            ? s.players.map(player => ({
-              name: player.name || "",
-              category: player.category || "",
-              line: player.line || "",
-              ou: player.ou || "",
-              final: player.final || "",
-              outcome: player.outcome || ""
-            }))
-            : []
+          ...DEFAULT_STATE,
+          ...parsed,
+          slips: Array.isArray(parsed.slips) ? parsed.slips : []
         };
-      });
-    }catch{}
-  }
-
-  function save(){
-    if(state.autosave !== "on") return;
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch{}
-  }
-
-  function payoutFor(s){
-    if(s.status !== "DONE") return null;
-    if(s.result === "L") return 0;
-    if(s.result === "P") return num(s.stake);
-    const paidOk = s.paidMult !== "" && s.paidMult !== null && s.paidMult !== undefined && Number.isFinite(Number(s.paidMult));
-    const used = paidOk ? num(s.paidMult) : num(s.mult);
-    return num(s.stake) * used;
-  }
-
-  function plFor(s){
-    const p = payoutFor(s);
-    if(p === null) return null;
-    return p - num(s.stake);
-  }
-
-  function tailedProfitFor(s){
-    if(!s.tailed || s.status !== "DONE") return 0;
-    const stake = num(s.stake);
-    if(stake <= 0) return 0;
-    const odds = num(s.oddsDecimal) || num(s.mult);
-    if(s.result === "W") return (stake * odds) - stake;
-    if(s.result === "L") return -stake;
-    return 0;
-  }
-
-  function simulatedProfitFor(s){
-    if(s.status !== "DONE") return 0;
-    const odds = num(s.oddsDecimal) || num(s.mult);
-    if(s.result === "W") return (SIMULATED_STAKE * odds) - SIMULATED_STAKE;
-    if(s.result === "L") return -SIMULATED_STAKE;
-    return 0;
-  }
-
-  function deriveAnalystType(analystId){
-    return getPresetAnalystType(analystId) || "Own";
-  }
-
-  function syncAnalystType(analystId){
-    const analystType = $("analystType");
-    const derived = getPresetAnalystType(analystId);
-    if(!analystType) return;
-    analystType.value = derived || "Own";
-  }
-
-  function decimalToAmerican(decimalOdds){
-    const d = num(decimalOdds);
-    if(d <= 1) return null;
-    if(d >= 2) return Math.round((d - 1) * 100);
-    return Math.round(-100 / (d - 1));
-  }
-
-  function oddsRangeLabel(decimalOdds){
-    const american = decimalToAmerican(decimalOdds);
-    if(american === null) return "Unknown";
-    if(american >= -110 && american <= 100) return "-110 to +100";
-    if(american > 100 && american <= 200) return "+100 to +200";
-    if(american > 200) return "+200+";
-    return "< -110";
-  }
-
-  function unitProfitFor(slip){
-    if(slip.result === "Win") return slip.oddsDecimal - 1;
-    if(slip.result === "Loss") return -1;
-    return 0;
-  }
-
-  function asAnalystSlip(s){
-    const legsFromPlayers = Array.isArray(s.players) ? s.players.length : 0;
-    const oddsDecimal = num(s.oddsDecimal) || num(s.mult) || 0;
-    const legsCount = Math.max(1, num(s.legsCount) || legsFromPlayers || 1);
-    const slipType = s.slipType || (legsCount > 1 ? "Parlay" : "Straight");
-    const analystId = (s.analystId || s.creator || "Unknown").trim() || "Unknown";
-    const analystType = s.analystType || deriveAnalystType(analystId);
-    const confidence = Number.isFinite(Number(s.confidence)) ? num(s.confidence) : null;
-    return {
-      analystId,
-      analystType,
-      stake: num(s.stake),
-      oddsDecimal,
-      result: s.result === "W" ? "Win" : s.result === "L" ? "Loss" : "Push",
-      slipType,
-      legsCount,
-      marketType: s.marketType || s.league || "",
-      confidence: (confidence && confidence >= 1 && confidence <= 5) ? confidence : null,
-      tags: normalizeTags(s),
-      date: s.date || "",
-      league: s.league || "",
-      raw: s
-    };
-  }
-
-  function collectPropRecords(slips){
-    const byAnalyst = new Map();
-    slips.forEach(slip => {
-      const analystId = String(slip.analystId || slip.creator || "Unknown").trim() || "Unknown";
-      if(!byAnalyst.has(analystId)) byAnalyst.set(analystId, []);
-      const props = Array.isArray(slip.players) ? slip.players : [];
-      const marketLabel = slip.marketType || slip.league || "Player props";
-      props.forEach(player => {
-        const outcome = player.outcome || derivePlayerOutcome(player);
-        if(outcome !== "Win" && outcome !== "Loss") return;
-        byAnalyst.get(analystId).push({
-          analystId,
-          player: player.name || "Unknown Player",
-          market: marketLabel,
-          line: player.line || "",
-          result: outcome
-        });
-      });
-    });
-    return byAnalyst;
-  }
-
-  function analyzeAnalystProfiles(doneSlips, allSlips = doneSlips){
-    const normalized = doneSlips.map(asAnalystSlip);
-    const byAnalyst = new Map();
-    normalized.forEach(slip => {
-      if(!byAnalyst.has(slip.analystId)) byAnalyst.set(slip.analystId, []);
-      byAnalyst.get(slip.analystId).push(slip);
-    });
-    const propRecordsByAnalyst = collectPropRecords(allSlips);
-    for(const analystId of propRecordsByAnalyst.keys()){
-      if(!byAnalyst.has(analystId)) byAnalyst.set(analystId, []);
-    }
-    PRESET_ANALYSTS.forEach(({id}) => {
-      if(!byAnalyst.has(id)) byAnalyst.set(id, []);
-    });
-
-    const profiles = {};
-    for(const [analystId, slips] of byAnalyst.entries()){
-      const propRecords = propRecordsByAnalyst.get(analystId) || [];
-      if(slips.length){
-        profiles[analystId] = buildAnalystProfile(analystId, slips, propRecords);
-      }else{
-        const profile = buildAnalystProfile(analystId, [], propRecords);
-        const presetType = getPresetAnalystType(analystId);
-        if(presetType) profile.analystType = presetType;
-        profiles[analystId] = profile;
+      }catch{
+        return {...DEFAULT_STATE};
       }
     }
-    return profiles;
-  }
 
-  function buildAnalystProfile(analystId, slips, propRecords = []){
-    const ordered = slips.slice().sort((a,b) => {
-      const dateSort = (a.date||"").localeCompare(b.date||"");
-      if(dateSort !== 0) return dateSort;
-      return (a.raw.createdAt||0) - (b.raw.createdAt||0);
-    });
-    const totalProfit = slips.reduce((a,s) => a + (plFor(s.raw) ?? 0), 0);
-    const totalStaked = slips.reduce((a,s) => a + num(s.stake), 0);
-    const overallROI = totalStaked > 0 ? totalProfit / totalStaked : 0;
-
-    const wins = slips.filter(s => s.result === "Win").length;
-    const losses = slips.filter(s => s.result === "Loss").length;
-    const pushes = slips.filter(s => s.result === "Push").length;
-    const hitRate = (wins + losses) > 0 ? wins / (wins + losses) : 0;
-
-    const impliedAvg = slips.length
-      ? slips.reduce((a,s) => a + (s.oddsDecimal > 0 ? (1 / s.oddsDecimal) : 0), 0) / slips.length
-      : 0;
-    const edge = hitRate - impliedAvg;
-
-    const profitPerSlip = slips.length ? totalProfit / slips.length : 0;
-    const profitPer100 = totalStaked > 0 ? (totalProfit / totalStaked) * 100 : 0;
-    const avgOddsTaken = slips.length ? slips.reduce((a,s) => a + num(s.oddsDecimal), 0) / slips.length : 0;
-
-    const profitSeries = slips.map(s => plFor(s.raw) ?? 0);
-    const volatility = stdDev(profitSeries);
-    const volatilityBucket = volatility < 5 ? "Low" : volatility < 15 ? "Medium" : "High";
-
-    const drawdownStats = drawdownFor(ordered);
-    const losingStreaks = losingStreakStats(ordered);
-
-    const last10 = ordered.slice(-10);
-    const last25 = ordered.slice(-25);
-    const last10ROI = roiFor(last10);
-    const last25ROI = roiFor(last25);
-    const trendDirection = last10ROI > overallROI + 0.02 ? "Improving" :
-      last10ROI < overallROI - 0.02 ? "Declining" : "Flat";
-    const status = last10ROI > 0.15 ? "HOT" : last10ROI < -0.15 ? "COLD" : "NEUTRAL";
-
-    const oddsStats = oddsRangeStats(slips);
-    const bestOddsRange = pickBestBucket(oddsStats);
-
-    const slipTypeStats = groupBy(slips, s => s.slipType);
-    const roiBySlipType = calcRoiByGroup(slipTypeStats);
-    const hitRateBySlipType = hitRateByGroup(slipTypeStats);
-    const bestSlipType = pickBestBucket(roiBySlipType);
-
-    const legsStats = groupBy(slips, s => s.legsCount);
-    const roiByLegs = calcRoiByGroup(legsStats);
-    const hitRateByLegs = hitRateByGroup(legsStats);
-
-    const marketStats = groupBy(slips, s => s.marketType || "Unknown");
-    const roiByMarket = calcRoiByGroup(marketStats);
-    const hitRateByMarket = hitRateByGroup(marketStats);
-    const bestMarket = pickBestBucket(roiByMarket);
-
-    const sportStats = groupBy(slips, s => s.league || "Unknown");
-    const roiBySport = calcRoiByGroup(sportStats);
-    const hitRateBySport = hitRateByGroup(sportStats);
-
-    const tagStats = tagPerformance(slips);
-
-    const legPenalty = legInflationPenalty(slips);
-    const overLegging = legPenalty < -0.02;
-
-    const confidenceAccuracy = confidenceCalibration(slips);
-
-    const luckFactor = expectedVsActual(slips);
-
-    const compositeScore = analystCompositeScore({
-      roi: overallROI,
-      edge,
-      consistency: 1 - clamp(Math.abs(last10ROI - overallROI) / 0.2, 0, 1),
-      drawdown: drawdownStats.maxDrawdownPct,
-      volatility,
-      confidenceAccuracy,
-      sampleSize: slips.length
-    });
-
-    const propWins = propRecords.filter(prop => prop.result === "Win").length;
-    const totalProps = propRecords.length;
-    const propHitRate = totalProps > 0 ? propWins / totalProps : 0;
-
-    return {
-      analystId,
-      analystType: slips[0]?.analystType || "Own",
-      summary: {
-        ROI: overallROI,
-        hitRate,
-        edge,
-        profitPer100,
-        volatility: volatilityBucket,
-        maxDrawdown: drawdownStats.maxDrawdownPct,
-        status
-      },
-      props: {
-        hitRate: propHitRate,
-        totalProps,
-        wins: propWins
-      },
-      strengths: {
-        bestMarket,
-        bestOddsRange,
-        bestSlipType
-      },
-      weaknesses: {
-        worstMarket: pickWorstBucket(calcRoiByGroup(marketStats)),
-        overLegging,
-        highVariance: volatilityBucket === "High"
-      },
-      trends: {
-        last10ROI,
-        last25ROI,
-        direction: trendDirection
-      },
-      detail: {
-        totalProfit,
-        totalStaked,
-        wins,
-        losses,
-        pushes,
-        profitPerSlip,
-        volatility,
-        drawdownStats,
-        losingStreaks,
-        confidenceAccuracy,
-        luckFactor,
-        compositeScore,
-        avgOddsTaken,
-        roiBySlipType,
-        hitRateBySlipType,
-        roiByLegs,
-        hitRateByLegs,
-        roiByMarket,
-        hitRateByMarket,
-        roiBySport,
-        hitRateBySport,
-        roiByOddsRange: oddsStats,
-        legInflationPenalty: legPenalty,
-        tagPerformance: tagStats,
-        profitSeries,
-        propRecords
-      }
-    };
-  }
-
-  function roiFor(slips){
-    const staked = slips.reduce((a,s) => a + num(s.stake), 0);
-    const profit = slips.reduce((a,s) => a + (plFor(s.raw) ?? 0), 0);
-    return staked > 0 ? profit / staked : 0;
-  }
-
-  function stdDev(values){
-    if(values.length === 0) return 0;
-    const mean = values.reduce((a,v) => a + v, 0) / values.length;
-    const variance = values.reduce((a,v) => a + Math.pow(v - mean, 2), 0) / values.length;
-    return Math.sqrt(variance);
-  }
-
-  function drawdownFor(slips){
-    let peak = 0;
-    let equity = 0;
-    let maxDrawdown = 0;
-    let drawdownSum = 0;
-    let drawdownCount = 0;
-    let lastPeakIndex = 0;
-    let recoveryTimes = [];
-    let currentTroughIndex = null;
-
-    slips.forEach((slip, idx) => {
-      equity += unitProfitFor(slip);
-      if(equity >= peak){
-        if(currentTroughIndex !== null){
-          recoveryTimes.push(idx - currentTroughIndex);
-          currentTroughIndex = null;
-        }
-        peak = equity;
-        lastPeakIndex = idx;
-      }else{
-        const dd = peak > 0 ? (peak - equity) / peak : 0;
-        maxDrawdown = Math.max(maxDrawdown, dd);
-        drawdownSum += dd;
-        drawdownCount += 1;
-        if(currentTroughIndex === null) currentTroughIndex = lastPeakIndex;
-      }
-    });
-
-    const avgDrawdown = drawdownCount > 0 ? drawdownSum / drawdownCount : 0;
-    const avgRecovery = recoveryTimes.length
-      ? recoveryTimes.reduce((a,v) => a + v, 0) / recoveryTimes.length
-      : 0;
-    return {maxDrawdownPct: maxDrawdown, avgDrawdownPct: avgDrawdown, avgRecovery};
-  }
-
-  function losingStreakStats(slips){
-    let current = 0;
-    let longest = 0;
-    const streaks = [];
-    slips.forEach(s => {
-      if(s.result === "Loss"){
-        current += 1;
-      }else{
-        if(current > 0) streaks.push(current);
-        longest = Math.max(longest, current);
-        current = 0;
-      }
-    });
-    if(current > 0) streaks.push(current);
-    longest = Math.max(longest, current);
-    const avg = streaks.length ? streaks.reduce((a,v) => a + v, 0) / streaks.length : 0;
-    return {longest, average: avg};
-  }
-
-  function groupBy(slips, keyFn){
-    const out = new Map();
-    slips.forEach(s => {
-      const key = keyFn(s);
-      if(!out.has(key)) out.set(key, []);
-      out.get(key).push(s);
-    });
-    return out;
-  }
-
-  function calcRoiByGroup(groups){
-    const out = {};
-    for(const [key, slips] of groups.entries()){
-      out[key] = roiFor(slips);
-    }
-    return out;
-  }
-
-  function hitRateByGroup(groups){
-    const out = {};
-    for(const [key, slips] of groups.entries()){
-      const wins = slips.filter(s => s.result === "Win").length;
-      const losses = slips.filter(s => s.result === "Loss").length;
-      out[key] = (wins + losses) > 0 ? wins / (wins + losses) : 0;
-    }
-    return out;
-  }
-
-  function tagPerformance(slips){
-    const map = new Map();
-    slips.forEach(slip => {
-      slip.tags.forEach(tag => {
-        if(!map.has(tag)) map.set(tag, []);
-        map.get(tag).push(slip);
-      });
-    });
-    return {
-      roi: calcRoiByGroup(map),
-      hitRate: hitRateByGroup(map)
-    };
-  }
-
-  function oddsRangeStats(slips){
-    const groups = groupBy(slips, s => oddsRangeLabel(s.oddsDecimal));
-    return calcRoiByGroup(groups);
-  }
-
-  function pickBestBucket(stats){
-    const entries = Object.entries(stats);
-    if(entries.length === 0) return "—";
-    entries.sort((a,b) => b[1] - a[1]);
-    return entries[0][0];
-  }
-
-  function pickWorstBucket(stats){
-    const entries = Object.entries(stats);
-    if(entries.length === 0) return "—";
-    entries.sort((a,b) => a[1] - b[1]);
-    return entries[0][0];
-  }
-
-  function legInflationPenalty(slips){
-    const parlays = slips.filter(s => s.slipType === "Parlay");
-    if(parlays.length < 2) return 0;
-    const groups = groupBy(parlays, s => s.legsCount);
-    const roiByLegs = calcRoiByGroup(groups);
-    const legs = Object.keys(roiByLegs).map(n => Number(n)).filter(n => Number.isFinite(n)).sort((a,b) => a - b);
-    if(legs.length < 2) return 0;
-    const minLegs = legs[0];
-    const maxLegs = legs[legs.length - 1];
-    const slope = (roiByLegs[maxLegs] - roiByLegs[minLegs]) / Math.max(1, maxLegs - minLegs);
-    return slope;
-  }
-
-  function confidenceCalibration(slips){
-    const withConfidence = slips.filter(s => s.confidence !== null);
-    if(withConfidence.length === 0) return 0.5;
-    const grouped = groupBy(withConfidence, s => s.confidence);
-    let total = 0;
-    let weightedError = 0;
-    for(const [level, group] of grouped.entries()){
-      const winRate = group.filter(s => s.result === "Win").length / group.length;
-      const expected = num(level) / 5;
-      weightedError += Math.abs(winRate - expected) * group.length;
-      total += group.length;
-    }
-    const avgError = total > 0 ? weightedError / total : 0;
-    return clamp(1 - avgError, 0, 1);
-  }
-
-  function expectedVsActual(slips){
-    let expected = 0;
-    let actual = 0;
-    slips.forEach(s => {
-      if(s.result === "Push") return;
-      const prob = s.oddsDecimal > 0 ? 1 / s.oddsDecimal : 0;
-      expected += prob * (s.oddsDecimal - 1) + (1 - prob) * -1;
-      actual += unitProfitFor(s);
-    });
-    return actual - expected;
-  }
-
-  function analystCompositeScore({roi, edge, consistency, drawdown, volatility, confidenceAccuracy, sampleSize}){
-    const roiScore = normalizeScore(roi, -0.5, 0.5);
-    const edgeScore = normalizeScore(edge, -0.1, 0.1);
-    const consistencyScore = clamp(consistency, 0, 1) * 100;
-    const drawdownScore = 100 * (1 - clamp(drawdown / 0.5, 0, 1));
-    const volatilityScore = 100 * (1 - clamp(volatility / 20, 0, 1));
-    const confidenceScore = clamp(confidenceAccuracy, 0, 1) * 100;
-    const sampleScore = clamp(sampleSize / 50, 0, 1) * 100;
-
-    const weights = {
-      roi: 0.25,
-      edge: 0.2,
-      consistency: 0.15,
-      drawdown: 0.15,
-      volatility: 0.1,
-      confidence: 0.1,
-      sample: 0.05
-    };
-
-    return (
-      roiScore * weights.roi +
-      edgeScore * weights.edge +
-      consistencyScore * weights.consistency +
-      drawdownScore * weights.drawdown +
-      volatilityScore * weights.volatility +
-      confidenceScore * weights.confidence +
-      sampleScore * weights.sample
-    );
-  }
-
-  function normalizeScore(value, min, max){
-    if(min === max) return 50;
-    return clamp(((value - min) / (max - min)) * 100, 0, 100);
-  }
-
-  function statsForDone(slips){
-    const staked = slips.reduce((a,s)=>a+num(s.stake),0);
-    const paid = slips.reduce((a,s)=>a + (payoutFor(s) ?? 0),0);
-    const net = paid - staked;
-    const roi = staked > 0 ? net / staked : 0;
-    return {staked, paid, net, roi};
-  }
-
-  function statusPill(s){
-    if(s.status === "PENDING") return `<span class="pill pending">Pending</span>`;
-    if(s.result === "W") return `<span class="pill win">Done • W</span>`;
-    if(s.result === "L") return `<span class="pill loss">Done • L</span>`;
-    return `<span class="pill push">Done • P</span>`;
-  }
-
-  function refreshDateDropdown(){
-    const select = $("filterDate");
-    const current = select.value;
-    const dates = Array.from(new Set(state.slips.map(s => s.date).filter(Boolean))).sort().reverse();
-    select.innerHTML = `<option value="ALL">All dates</option>` + dates.map(d => `<option value="${d}">${d}</option>`).join("");
-    select.value = dates.includes(current) ? current : "ALL";
-  }
-
-  function refreshGroupDropdown(){
-    const select = $("filterGroup");
-    const current = select.value;
-    const groups = Array.from(new Set(state.slips.map(s => s.group).filter(Boolean))).sort();
-    select.innerHTML = `<option value="ALL">All groups</option>` + groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join("");
-    select.value = groups.includes(current) ? current : "ALL";
-  }
-
-  function refreshDatalists(){
-    const presets = {
-      appList: ["PrizePicks", "Underdog", "FanDuel", "DraftKings", "BetMGM", "Caesars"],
-      leagueList: ["NBA", "NFL", "NHL", "MLB", "NCAAF", "NCAAB", "Soccer", "WNBA", "MMA", "Tennis"],
-      tagList: ["nba", "nfl", "nhl", "mlb", "props", "parlay", "live"],
-      groupList: [],
-
-    };
-
-    const fromSlips = (key) => state.slips.map(s => s[key]).filter(Boolean);
-    const tagFromSlips = () => state.slips.flatMap(s => {
-      if(Array.isArray(s.tags)) return s.tags;
-      if(typeof s.tags === "string") return parseTags(s.tags);
-      if(s.tag) return parseTags(s.tag);
-      return [];
-    });
-    const merge = (preset, dynamic) => Array.from(new Set([...preset, ...dynamic])).sort();
-
-    const lists = {
-      appList: merge(presets.appList, fromSlips("app")),
-      leagueList: merge(presets.leagueList, fromSlips("league")),
-      tagList: merge(presets.tagList, [...fromSlips("tag"), ...tagFromSlips()]),
-      groupList: merge(presets.groupList, fromSlips("group")),
-
-    };
-
-    Object.entries(lists).forEach(([id, values]) => {
-      const list = $(id);
-      if(!list) return;
-      list.innerHTML = values.map(v => `<option value="${escapeHtml(v)}"></option>`).join("");
-    });
-  }
-
-  function refreshAnalystSelector(){
-    const select = $("analystId");
-    if(!select) return;
-    const presetIds = PRESET_ANALYSTS.map(({id}) => id);
-    const presetLookup = new Set(presetIds.map(id => id.toUpperCase()));
-    const fromSlips = Array.from(new Set(state.slips.map(s => s.analystId).filter(Boolean)));
-    const merged = [
-      ...presetIds,
-      ...fromSlips.filter(id => !presetLookup.has(String(id).toUpperCase()))
-    ];
-    const current = select.value;
-    select.innerHTML = merged.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`).join("");
-    const fallback = merged.includes(DEFAULT_ANALYST_ID) ? DEFAULT_ANALYST_ID : (merged[0] || "");
-    select.value = merged.includes(current) ? current : fallback;
-    syncAnalystType(select.value);
-  }
-
-  function applyFilters(list){
-    const status = $("filterStatus").value;
-    const query = $("search").value.trim().toLowerCase();
-    const dateFilter = $("filterDate").value;
-    const groupFilter = $("filterGroup").value;
-
-    let out = list.slice();
-
-    if(status === "PENDING") out = out.filter(s => s.status === "PENDING");
-    if(status === "DONE") out = out.filter(s => s.status === "DONE");
-    if(dateFilter !== "ALL") out = out.filter(s => s.date === dateFilter);
-    if(groupFilter !== "ALL") out = out.filter(s => (s.group || "") === groupFilter);
-
-    if(query){
-      out = out.filter(s =>
-        (s.app||"").toLowerCase().includes(query) ||
-        (s.league||"").toLowerCase().includes(query) ||
-        (s.oddsType||"").toLowerCase().includes(query) ||
-        (s.creator||"").toLowerCase().includes(query) ||
-        (s.analystId||"").toLowerCase().includes(query) ||
-        (s.marketType||"").toLowerCase().includes(query) ||
-        (Array.isArray(s.tags) ? s.tags.join(" ") : "").toLowerCase().includes(query) ||
-        (s.tag||"").toLowerCase().includes(query) ||
-        (s.group||"").toLowerCase().includes(query) ||
-        (s.slipId||"").toLowerCase().includes(query) ||
-        (s.players || []).some(p => `${p.name} ${p.category || ""} ${p.ou} ${p.line} ${p.final || ""} ${p.outcome || ""}`.toLowerCase().includes(query))
-      );
+    function saveState(){
+      localStorage.setItem("chuyito-tracker", JSON.stringify(state));
     }
 
-    const sortBy = $("sortBy").value;
-    out.sort((a,b) => {
-      if(sortBy === "date_desc") return (b.date||"").localeCompare(a.date||"") || (b.createdAt||0)-(a.createdAt||0);
-      if(sortBy === "date_asc")  return (a.date||"").localeCompare(b.date||"") || (a.createdAt||0)-(b.createdAt||0);
-      if(sortBy === "stake_desc") return num(b.stake)-num(a.stake);
-      if(sortBy === "stake_asc")  return num(a.stake)-num(b.stake);
+    function formatUnits(value){
+      const rounded = Math.round(value * 100) / 100;
+      return `${rounded.toFixed(2)}u`;
+    }
+
+    function formatMoney(value){
+      return new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"}).format(value);
+    }
+
+    function unitsProfit(slip){
+      if(slip.status !== "DONE") return 0;
+      if(slip.result === "WIN") return slip.units * slip.multiplier;
+      if(slip.result === "LOSS") return -slip.units;
       return 0;
-    });
-
-    return out;
-  }
-
-  function kpiCard(label, valueHtml){
-    const d = document.createElement("div");
-    d.className = "kpi";
-    d.innerHTML = `<div class="k">${label}</div><div class="v">${valueHtml}</div>`;
-    return d;
-  }
-
-  function renderAnalystProfiles(done, allSlips){
-    const profiles = analyzeAnalystProfiles(done, allSlips);
-    const analystIds = Object.keys(profiles).sort();
-    const primarySelect = $("analystPrimary");
-    const compareSelect = $("analystCompare");
-    const grid = $("profileGrid");
-
-    if(!primarySelect || !compareSelect || !grid) return;
-
-    primarySelect.innerHTML = analystIds.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`).join("");
-    compareSelect.innerHTML = `<option value="">None</option>` + analystIds.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`).join("");
-
-    if(!analystIds.length){
-      grid.innerHTML = `<div class="muteline">No analyst data yet. Add slips to see profiles.</div>`;
-      return;
     }
 
-    if(!analystIds.includes(state.analystPrimary)){
-      state.analystPrimary = analystIds[0];
+    function parseProps(text){
+      if(!text.trim()) return [];
+      return text.split("\n").map(line => {
+        const [name, prop, result] = line.split("—").map(part => (part || "").trim());
+        return { name, prop, result };
+      }).filter(item => item.name || item.prop || item.result);
     }
-    if(state.analystCompare && !analystIds.includes(state.analystCompare)){
-      state.analystCompare = "";
-    }
-    primarySelect.value = state.analystPrimary;
-    compareSelect.value = state.analystCompare;
 
-    const cards = [];
-    const primaryProfile = profiles[state.analystPrimary];
-    if(primaryProfile) cards.push(renderProfileCard(primaryProfile, "Primary"));
-    if(state.analystCompare && profiles[state.analystCompare]){
-      cards.push(renderProfileCard(profiles[state.analystCompare], "Comparison"));
+    function propsToText(props){
+      return props.map(p => [p.name, p.prop, p.result].filter(Boolean).join(" — ")).join("\n");
     }
-    grid.innerHTML = cards.join("");
-  }
 
-  function renderProfileCard(profile, label){
-    const summary = profile.summary;
-    const trends = profile.trends;
-    const props = profile.props || {hitRate: 0, totalProps: 0};
-    const detail = profile.detail;
-    const trendLabel = trends.last10ROI > summary.ROI
-      ? {text: "📈 Improving", cls: "pos"}
-      : trends.last10ROI < summary.ROI
-        ? {text: "📉 Declining", cls: "neg"}
-        : {text: "➖ Flat", cls: "neu"};
-    return `
-      <div class="profile-card">
-        <div>
-          <div class="profile-pill">${label}</div>
-          <h3>${escapeHtml(profile.analystId)}</h3>
-        </div>
-        <div class="profile-section">
-          <div class="profile-section-title">Slip Performance</div>
-          <div class="profile-stats">
-            <div class="profile-stat"><div class="k">Slip ROI</div><div class="v mono">${fmtPct(summary.ROI)}</div></div>
-            <div class="profile-stat"><div class="k">Slip Hit Rate</div><div class="v mono">${fmtPct(summary.hitRate)}</div></div>
-            <div class="profile-stat"><div class="k">Total Slips</div><div class="v mono">${detail.wins + detail.losses + detail.pushes}</div></div>
+    function updateDayLabel(){
+      const date = new Date(state.selectedDate);
+      $("dayLabel").textContent = date.toLocaleDateString("en-US", {weekday: "long", month: "short", day: "numeric"});
+    }
+
+    function slipsForDate(date){
+      return state.slips.filter(s => s.date === date);
+    }
+
+    function summaryFor(slips){
+      const totalUnits = slips.reduce((sum, slip) => sum + unitsProfit(slip), 0);
+      const wins = slips.filter(s => s.status === "DONE" && s.result === "WIN").length;
+      const losses = slips.filter(s => s.status === "DONE" && s.result === "LOSS").length;
+      const pending = slips.filter(s => s.status === "PENDING").length;
+      const props = slips.flatMap(s => s.props || []);
+      const propHits = props.filter(p => (p.result || "").toLowerCase().includes("hit")).length;
+      const propMisses = props.filter(p => (p.result || "").toLowerCase().includes("miss") || (p.result || "").toLowerCase().includes("loss")).length;
+      return { totalUnits, wins, losses, pending, propHits, propMisses };
+    }
+
+    function updateKpis(){
+      const daySlips = slipsForDate(state.selectedDate);
+      const daySummary = summaryFor(daySlips);
+      const overallSummary = summaryFor(state.slips);
+
+      const kpis = [
+        { label: "Today Units", value: daySummary.totalUnits, type: "units" },
+        { label: "Overall Units", value: overallSummary.totalUnits, type: "units" },
+        { label: "Today Slips", value: daySlips.length, type: "count" },
+        { label: "Pending", value: daySummary.pending, type: "count" },
+        { label: "Wins", value: overallSummary.wins, type: "count" },
+        { label: "Losses", value: overallSummary.losses, type: "count" },
+        { label: "Prop Hits", value: overallSummary.propHits, type: "count" },
+        { label: "Prop Misses", value: overallSummary.propMisses, type: "count" }
+      ];
+
+      const grid = $("kpiGrid");
+      grid.innerHTML = "";
+      kpis.forEach(kpi => {
+        const div = document.createElement("div");
+        div.className = "kpi";
+        const value = kpi.type === "units" ? formatUnits(kpi.value) : kpi.value;
+        const cls = kpi.type === "units" ? (kpi.value >= 0 ? "pos" : "neg") : "";
+        div.innerHTML = `<div class="k">${kpi.label}</div><div class="v ${cls}">${value}</div>`;
+        grid.appendChild(div);
+      });
+
+      $("daySummary").textContent = `Today: ${daySlips.length} slips • ${formatUnits(daySummary.totalUnits)} units`;
+    }
+
+    function renderSlipList(){
+      const container = $("slipList");
+      const slips = slipsForDate(state.selectedDate);
+      if(!slips.length){
+        container.innerHTML = `<div class="muteline">No slips logged for this day yet.</div>`;
+        return;
+      }
+      container.innerHTML = "";
+      slips.forEach(slip => {
+        const item = document.createElement("div");
+        item.className = "slip-item";
+        item.innerHTML = `
+          <div class="slip-head">
+            <div>
+              <strong>${slip.notes || slip.type || "Slip"}</strong>
+              <div class="muteline">${slip.book || ""}</div>
+            </div>
+            <span class="pill ${slip.status === "PENDING" ? "pending" : slip.result === "WIN" ? "win" : slip.result === "LOSS" ? "loss" : ""}">
+              ${slip.status === "PENDING" ? "Pending" : slip.result}
+            </span>
           </div>
-        </div>
-        <div class="profile-section">
-          <div class="profile-section-title">Player Props</div>
-          <div class="profile-stats">
-            <div class="profile-stat"><div class="k">Player Prop Hit Rate</div><div class="v mono">${fmtPct(props.hitRate)}</div></div>
-            <div class="profile-stat"><div class="k">Trend</div><div class="v ${trendLabel.cls}">${trendLabel.text}</div></div>
+          <div class="slip-meta">
+            <div>Units: <strong>${formatUnits(slip.units)}</strong></div>
+            <div>Multiplier: <strong>${slip.multiplier}x</strong></div>
+            <div>Units P/L: <strong class="${unitsProfit(slip) >= 0 ? "pos" : "neg"}">${formatUnits(unitsProfit(slip))}</strong></div>
+            <div>Props: <strong>${(slip.props || []).length}</strong></div>
           </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderProfileSparkline(series){
-    if(!Array.isArray(series) || series.length === 0){
-      return `<div class="profile-chart"><div class="muteline">No slip trend yet.</div></div>`;
-    }
-    const data = series.slice(-16);
-    let cumulative = 0;
-    const points = data.map(val => {
-      cumulative += val;
-      return cumulative;
-    });
-    const min = Math.min(...points);
-    const max = Math.max(...points);
-    const range = max - min || 1;
-    const width = 100;
-    const height = 80;
-    const step = points.length > 1 ? width / (points.length - 1) : width;
-    const coords = points.map((val, idx) => {
-      const x = idx * step;
-      const y = height - ((val - min) / range) * (height - 10) - 5;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(" ");
-    return `
-      <div class="profile-chart">
-        <div class="muteline">Slip trend (last ${data.length} slips)</div>
-        <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Profit trend sparkline">
-          <polyline points="${coords}" fill="none" stroke="rgba(110,168,255,0.9)" stroke-width="2" stroke-linecap="round" />
-        </svg>
-      </div>
-    `;
-  }
-
-  function moneySpan(n){
-    const v = num(n);
-    const cls = v > 0 ? "pos" : (v < 0 ? "neg" : "neu");
-    return `<span class="${cls}">${v >= 0 ? "+" : ""}${fmtMoney(v)}</span>`;
-  }
-
-  function render(){
-    refreshDateDropdown();
-    refreshGroupDropdown();
-    refreshDatalists();
-    refreshAnalystSelector();
-
-    const bankrollInput = $("bankroll");
-    const bankrollLockNote = $("bankrollLockNote");
-    const hasTailedSlips = state.slips.some(s => s.tailed);
-    if(bankrollInput){
-      bankrollInput.value = String(state.startingBankroll || "");
-      bankrollInput.disabled = hasTailedSlips;
-    }
-    if(bankrollLockNote){
-      bankrollLockNote.textContent = hasTailedSlips
-        ? "Locked once tailed slips exist. Use Reset Bankroll to change."
-        : "Editable until you tail a slip.";
-    }
-    $("autosave").value = state.autosave;
-
-    const shown = applyFilters(state.slips);
-
-    const slipLog = $("slipLog");
-    slipLog.innerHTML = "";
-    for(const s of shown){
-      const odds = num(s.oddsDecimal || s.mult).toFixed(2);
-      const analystLabel = s.analystId || s.creator || "";
-      const marketLabel = s.marketType || s.league || "Player props";
-      const players = Array.isArray(s.players) ? s.players : [];
-      const propsList = players.length
-        ? players.map(player => {
-          const categoryLabel = player.category ? ` • ${player.category}` : "";
-          return `
-          <div>
-            <div class="prop-name">${escapeHtml(player.name || "Unknown Player")}</div>
-            <div class="prop-detail">${escapeHtml(`${player.ou || ""} ${player.line || ""}`.trim())}${escapeHtml(categoryLabel)} (${escapeHtml(marketLabel)})</div>
+          ${slip.props && slip.props.length ? `
+            <div class="props">
+              ${slip.props.map(prop => `
+                <div class="prop">
+                  <div class="name">${prop.name || "Prop"}</div>
+                  <div class="muteline">${prop.prop || ""}</div>
+                  <div>${prop.result || ""}</div>
+                </div>
+              `).join("")}
+            </div>
+          ` : ""}
+          <div class="actions-inline">
+            <button class="btn" data-action="edit" data-id="${slip.id}">Edit</button>
+            <button class="btn" data-action="win" data-id="${slip.id}">Mark Win</button>
+            <button class="btn" data-action="loss" data-id="${slip.id}">Mark Loss</button>
+            <button class="btn" data-action="pending" data-id="${slip.id}">Pending</button>
+            <button class="btn" data-action="delete" data-id="${slip.id}">Delete</button>
           </div>
         `;
-        }).join("")
-        : `<div class="muteline">No player props listed.</div>`;
-
-      const row = document.createElement("div");
-      row.className = "slip-row";
-      row.setAttribute("data-slip-row", s.id);
-      row.setAttribute("role", "listitem");
-      row.setAttribute("data-expanded", expandedSlipId === s.id ? "true" : "false");
-      row.innerHTML = `
-        <div class="slip-row-top">
-          <div class="slip-summary">
-            <div class="slip-cell"><div class="k">Date</div><div class="v mono">${escapeHtml(s.date||"")}</div></div>
-            <div class="slip-cell"><div class="k">League</div><div class="v">${escapeHtml(s.league||"—")}</div></div>
-            <div class="slip-cell"><div class="k">Slip Type</div><div class="v">${escapeHtml(s.slipType||"—")}</div></div>
-            <div class="slip-cell"><div class="k">Legs</div><div class="v mono">${num(s.legsCount) || players.length || 1}</div></div>
-            <div class="slip-cell"><div class="k">Odds</div><div class="v mono">${odds}x</div></div>
-            <div class="slip-cell"><div class="k">Result</div><div class="v">${statusPill(s)}</div></div>
-            <div class="slip-cell"><div class="k">Tailed</div><div class="v">${s.tailed ? "Yes" : "No"}</div></div>
-            <div class="slip-cell"><div class="k">Analyst</div><div class="v">${escapeHtml(analystLabel || "—")}</div></div>
-          </div>
-          <button class="kebab" title="Actions" data-kebab="${s.id}">⋯</button>
-        </div>
-        <div class="slip-props">
-          ${propsList}
-        </div>
-      `;
-      slipLog.appendChild(row);
-    }
-
-    if(!shown.length){
-      slipLog.innerHTML = `<div class="muteline">No slips yet.</div>`;
-    }
-
-    if(pendingScrollId){
-      const target = slipLog.querySelector(`[data-slip-row="${pendingScrollId}"]`);
-      if(target){
-        target.scrollIntoView({behavior: "smooth", block: "center"});
-      }
-      pendingScrollId = null;
-    }
-
-    // KPIs
-    const done = state.slips.filter(s => s.status === "DONE");
-    const tailedDone = done.filter(s => s.tailed);
-    const tailedProfit = tailedDone.reduce((a,s) => a + tailedProfitFor(s), 0);
-    const tailedStaked = tailedDone.reduce((a,s) => a + num(s.stake), 0);
-    const tailedRoi = tailedStaked > 0 ? tailedProfit / tailedStaked : 0;
-    const currentBankroll = num(state.startingBankroll) + tailedProfit;
-
-    const discordProfit = done.reduce((a,s) => a + simulatedProfitFor(s), 0);
-    const discordStaked = done.length * SIMULATED_STAKE;
-    const discordRoi = discordStaked > 0 ? discordProfit / discordStaked : 0;
-    const discordWins = done.filter(s => s.result === "W").length;
-    const discordLosses = done.filter(s => s.result === "L").length;
-    const discordHitRate = (discordWins + discordLosses) > 0
-      ? discordWins / (discordWins + discordLosses)
-      : 0;
-
-    const kpisPersonal = $("kpisPersonal");
-    const kpisDiscord = $("kpisDiscord");
-    if(kpisPersonal){
-      kpisPersonal.innerHTML = "";
-      kpisPersonal.appendChild(kpiCard("ROI", `<span class="mono">${fmtPct(tailedRoi)}</span>`));
-      kpisPersonal.appendChild(kpiCard("Total Profit", moneySpan(tailedProfit)));
-      kpisPersonal.appendChild(kpiCard("Total Staked", `<span class="mono">${fmtMoney(tailedStaked)}</span>`));
-      kpisPersonal.appendChild(kpiCard("Current Bankroll", `<span class="mono">${fmtMoney(currentBankroll)}</span>`));
-    }
-    if(kpisDiscord){
-      kpisDiscord.innerHTML = "";
-      kpisDiscord.appendChild(kpiCard("Simulated ROI", `<span class="mono">${fmtPct(discordRoi)}</span>`));
-      kpisDiscord.appendChild(kpiCard("Hit Rate", `<span class="mono">${fmtPct(discordHitRate)}</span>`));
-      kpisDiscord.appendChild(kpiCard("Total Slips Tracked", `<span class="mono">${done.length}</span>`));
-    }
-
-    $("bankrollLine").innerHTML =
-      `Starting bankroll: <b class="mono">${fmtMoney(state.startingBankroll)}</b> → Current (tailed slips): <b class="mono">${fmtMoney(currentBankroll)}</b>`;
-
-    renderBankrollChart(tailedDone, currentBankroll);
-    renderAnalystProfiles(done, state.slips);
-  }
-
-  function renderBankrollChart(done, endBankroll){
-    const canvas = $("bankrollChart");
-    if(!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const width = canvas.width;
-    const height = canvas.height;
-    ctx.clearRect(0,0,width,height);
-
-    if(done.length === 0){
-      ctx.fillStyle = "rgba(255,255,255,0.55)";
-      ctx.font = "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-      ctx.fillText("No finished tailed slips yet.", 12, 20);
-      return;
-    }
-
-    const sorted = done.slice().sort((a,b) => {
-      const dateSort = (a.date||"").localeCompare(b.date||"");
-      if(dateSort !== 0) return dateSort;
-      return (a.createdAt||0) - (b.createdAt||0);
-    });
-
-    const points = [];
-    let bank = num(state.startingBankroll);
-    points.push(bank);
-    for(const s of sorted){
-      bank += tailedProfitFor(s);
-      points.push(bank);
-    }
-
-    const minVal = Math.min(...points);
-    const maxVal = Math.max(...points);
-    const range = Math.max(1, maxVal - minVal);
-    const padding = 16;
-
-    const xStep = (width - padding * 2) / Math.max(1, points.length - 1);
-    const yFor = (val) => height - padding - ((val - minVal) / range) * (height - padding * 2);
-
-    ctx.strokeStyle = "rgba(255,255,255,0.2)";
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, height - padding);
-    ctx.lineTo(width - padding, height - padding);
-    ctx.stroke();
-
-    ctx.strokeStyle = "rgba(110,168,255,0.85)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    points.forEach((val, i) => {
-      const x = padding + i * xStep;
-      const y = yFor(val);
-      if(i === 0) ctx.moveTo(x,y);
-      else ctx.lineTo(x,y);
-    });
-    ctx.stroke();
-
-    ctx.fillStyle = "rgba(255,255,255,0.65)";
-    ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\",\"Courier New\", monospace";
-    ctx.fillText(`End: ${fmtMoney(endBankroll)}`, padding, height - 6);
-  }
-
-  function readSlipFromForm(forcePending=false, existingSlip=null){
-    const date = $("date").value || todayISO();
-    const status = forcePending ? "PENDING" : $("status").value;
-    const result = $("result").value;
-    const app = $("app").value.trim();
-    const league = $("league").value.trim();
-    const oddsType = $("oddsType").value;
-    const tailed = $("tailed").checked;
-    const stakeInput = $("stake").value;
-    const stake = tailed ? num(stakeInput) : null;
-    const mult = num($("mult").value);
-    const oddsDecimalInput = num($("oddsDecimal")?.value);
-    const paidRaw = $("paid").value;
-    const paidMult = (paidRaw === "" ? "" : num(paidRaw));
-    const tag = $("tag").value.trim();
-    let tags = parseTags($("tags")?.value);
-    if(!tags.length && tag) tags = parseTags(tag);
-    const group = $("group").value.trim();
-    const analystId = $("analystId").value.trim();
-    const creator = resolveCreator("", analystId);
-    const analystType = deriveAnalystType(analystId || creator);
-    const slipType = $("slipType").value;
-    const legsCount = num($("legsCount").value);
-    const marketType = $("marketType")?.value.trim() || "Player props";
-    const confidenceRaw = $("confidence")?.value || "";
-    const confidence = confidenceRaw ? num(confidenceRaw) : null;
-    const slipId = $("slipId").value.trim();
-    const players = readPlayersFromForm();
-    if(players === null) return null;
-
-    if(tailed && stake <= 0) return alert("Stake must be > 0 for tailed slips."), null;
-    if(mult <= 0) return alert("Listed multiplier must be > 0"), null;
-    const oddsDecimal = oddsDecimalInput > 0 ? oddsDecimalInput : mult;
-    if(oddsDecimal <= 0) return alert("Odds (decimal) must be > 0"), null;
-    if(players.length === 0) return alert("Add at least one player/prop."), null;
-
-    return {
-      id: existingSlip?.id || genId(),
-      createdAt: existingSlip?.createdAt || Date.now(),
-      date, status,
-      result: status==="DONE" ? result : "",
-      app, league, oddsType,
-      creator,
-      analystId: analystId || creator,
-      analystType: analystType || deriveAnalystType(analystId || creator),
-      slipType: slipType || (players.length > 1 ? "Parlay" : "Straight"),
-      legsCount: legsCount > 0 ? legsCount : Math.max(1, players.length),
-      marketType,
-      confidence: (confidence === null ? null : confidence),
-      tailed,
-      stake, mult, oddsDecimal, paidMult, tag, tags, group, slipId, players
-    };
-  }
-
-  function clearForm(){
-    const setValue = (id, value) => {
-      const el = $(id);
-      if(el) el.value = value;
-    };
-    setValue("app", "");
-    setValue("league", "");
-    setValue("oddsType", "");
-    setValue("stake", "");
-    setValue("mult", "");
-    setValue("oddsDecimal", "");
-    setValue("paid", "");
-    setValue("tag", "");
-    setValue("tags", "");
-    setValue("group", "");
-    setValue("slipId", "");
-    setValue("analystId", "Chuy");
-    setValue("slipType", "");
-    setValue("legsCount", "");
-    setValue("marketType", "");
-    setValue("confidence", "");
-    if($("tailed")) $("tailed").checked = true;
-    syncTailedInput(true);
-    syncAnalystType("Chuy");
-    renderPlayers([]);
-  }
-
-  function enterSlipMode(){
-    setUiMode("ENTER_SLIP");
-    $("main").scrollIntoView({behavior: "smooth", block: "start"});
-  }
-
-  function exitEnterMode(){
-    editingSlipId = null;
-    setEditingBanner(false);
-    clearForm();
-    setUiMode("VIEW");
-    render();
-  }
-
-  // Import/Export
-  function downloadFile(filename, content, mime){
-    const blob = new Blob([content], {type:mime});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = filename; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function exportTxt(){
-    const payload = {
-      version: 2,
-      exportedAt: new Date().toISOString(),
-      startingBankroll: state.startingBankroll,
-      autosave: state.autosave,
-      kpiView: state.kpiView,
-      analystPrimary: state.analystPrimary,
-      analystCompare: state.analystCompare,
-      slips: state.slips
-    };
-    downloadFile(`slips-${todayISO()}.txt`, JSON.stringify(payload,null,2), "text/plain");
-  }
-
-  function exportCsv(){
-    const cols = ["date","status","result","app","league","oddsType","creator","analystId","analystType","slipType","legsCount","marketType","confidence","tags","tailed","stake","mult","oddsDecimal","paidMult","payout","profitLoss","tag","group","slipId","players"];
-    const lines = [cols.join(",")];
-    for(const s of state.slips){
-      const p = payoutFor(s);
-      const pl = plFor(s);
-      const playersCsv = (s.players || [])
-        .map(player => formatPlayerDisplay(player))
-        .join(" | ");
-      const row = [
-        s.date, s.status, s.result, s.app, s.league, s.oddsType, s.creator,
-        s.analystId, s.analystType, s.slipType, s.legsCount, s.marketType, s.confidence,
-        Array.isArray(s.tags) ? s.tags.join("|") : "",
-        s.tailed ? "true" : "false",
-        s.stake, s.mult, s.oddsDecimal, (s.paidMult===""? "" : s.paidMult),
-        (p===null? "" : p),
-        (pl===null? "" : pl),
-        s.tag, s.group, s.slipId,
-        playersCsv
-      ].map(v => {
-        const str = String(v ?? "");
-        return /[",\n]/.test(str) ? `"${str.replaceAll('"','""')}"` : str;
+        container.appendChild(item);
       });
-      lines.push(row.join(","));
     }
-    downloadFile(`slips-${todayISO()}.csv`, lines.join("\n"), "text/csv");
-  }
 
-  async function importTxt(file){
-    try{
+    function updateBankrollSummary(){
+      const followerBank = Number($("followerBank").value) || 0;
+      const bankrollStart = Number($("bankrollStart").value) || 0;
+      state.followerBank = followerBank;
+      state.bankrollStart = bankrollStart;
+      saveState();
+
+      const unitValue = followerBank * 0.05;
+      const totalUnits = state.slips.reduce((sum, slip) => sum + unitsProfit(slip), 0);
+      const followerPnL = totalUnits * unitValue;
+      const followerBalance = followerBank + followerPnL;
+
+      $("bankrollSummary").innerHTML = `
+        <div>Follower Unit Size: <strong>${formatMoney(unitValue)}</strong></div>
+        <div>Total Units: <strong class="${totalUnits >= 0 ? "pos" : "neg"}">${formatUnits(totalUnits)}</strong></div>
+        <div>Follower P/L: <strong class="${followerPnL >= 0 ? "pos" : "neg"}">${formatMoney(followerPnL)}</strong></div>
+        <div>Follower Balance: <strong>${formatMoney(followerBalance)}</strong></div>
+      `;
+    }
+
+    function drawLineChart(canvas, values, labelFormatter){
+      const ctx = canvas.getContext("2d");
+      const {width, height} = canvas;
+      ctx.clearRect(0,0,width,height);
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.font = "12px ui-sans-serif";
+
+      if(values.length === 0){
+        ctx.fillText("No data yet.", 12, 20);
+        return;
+      }
+
+      const padding = 24;
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const range = Math.max(1, max - min);
+
+      ctx.strokeStyle = "rgba(255,255,255,0.2)";
+      ctx.beginPath();
+      ctx.moveTo(padding, padding);
+      ctx.lineTo(padding, height - padding);
+      ctx.lineTo(width - padding, height - padding);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(110,168,255,0.85)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      values.forEach((val, idx) => {
+        const x = padding + (idx / Math.max(1, values.length - 1)) * (width - padding * 2);
+        const y = height - padding - ((val - min) / range) * (height - padding * 2);
+        if(idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "12px ui-monospace";
+      ctx.fillText(labelFormatter(values[values.length - 1]), padding, height - 8);
+    }
+
+    function drawBarChart(canvas, series){
+      const ctx = canvas.getContext("2d");
+      const {width, height} = canvas;
+      ctx.clearRect(0,0,width,height);
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.font = "12px ui-sans-serif";
+      if(series.length === 0){
+        ctx.fillText("No data yet.", 12, 20);
+        return;
+      }
+
+      const padding = 24;
+      const values = series.map(item => item.value);
+      const max = Math.max(1, Math.max(...values.map(v => Math.abs(v))));
+      const barWidth = (width - padding * 2) / series.length;
+
+      ctx.strokeStyle = "rgba(255,255,255,0.2)";
+      ctx.beginPath();
+      ctx.moveTo(padding, height - padding);
+      ctx.lineTo(width - padding, height - padding);
+      ctx.stroke();
+
+      series.forEach((item, idx) => {
+        const x = padding + idx * barWidth + barWidth * 0.2;
+        const barHeight = (Math.abs(item.value) / max) * (height - padding * 2);
+        const y = height - padding - barHeight;
+        ctx.fillStyle = item.value >= 0 ? "rgba(74,222,128,0.7)" : "rgba(251,113,133,0.7)";
+        ctx.fillRect(x, y, barWidth * 0.6, barHeight);
+      });
+    }
+
+    function renderCharts(){
+      const sorted = [...state.slips].sort((a,b) => a.date.localeCompare(b.date));
+      let running = 0;
+      const cumulative = [];
+      sorted.forEach(slip => {
+        running += unitsProfit(slip);
+        cumulative.push(running);
+      });
+      drawLineChart($("unitsChart"), cumulative, (val) => `End: ${formatUnits(val)}`);
+
+      const last14 = [];
+      const now = new Date(state.selectedDate);
+      for(let i=13; i>=0; i--){
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const iso = d.toISOString().slice(0,10);
+        const units = slipsForDate(iso).reduce((sum, slip) => sum + unitsProfit(slip), 0);
+        last14.push({ date: iso, value: units });
+      }
+      drawBarChart($("dailyChart"), last14);
+    }
+
+    function renderAll(){
+      updateDayLabel();
+      updateKpis();
+      renderSlipList();
+      updateBankrollSummary();
+      renderCharts();
+      saveState();
+    }
+
+    function openEntry(slip){
+      $("entryCard").hidden = false;
+      $("slipDate").value = slip?.date || state.selectedDate;
+      $("slipStatus").value = slip?.status || "PENDING";
+      $("slipResult").value = slip?.result || "WIN";
+      $("slipResult").disabled = $("slipStatus").value !== "DONE";
+      $("slipType").value = slip?.type || "";
+      $("unitStake").value = slip?.units ?? "";
+      $("multiplier").value = slip?.multiplier ?? "";
+      $("slipBook").value = slip?.book || "";
+      $("slipNotes").value = slip?.notes || "";
+      $("propsInput").value = slip?.props ? propsToText(slip.props) : "";
+      editingId = slip?.id || null;
+    }
+
+    function closeEntry(){
+      $("entryCard").hidden = true;
+      editingId = null;
+    }
+
+    function saveSlip(){
+      const slip = {
+        id: editingId || crypto.randomUUID(),
+        date: $("slipDate").value || state.selectedDate,
+        status: $("slipStatus").value,
+        result: $("slipResult").value,
+        type: $("slipType").value.trim(),
+        units: Number($("unitStake").value) || 0,
+        multiplier: Number($("multiplier").value) || 0,
+        book: $("slipBook").value.trim(),
+        notes: $("slipNotes").value.trim(),
+        props: parseProps($("propsInput").value)
+      };
+      if(slip.units <= 0 || slip.multiplier <= 0){
+        alert("Enter units and multiplier.");
+        return;
+      }
+      if(slip.status !== "DONE") slip.result = "PENDING";
+
+      if(editingId){
+        const idx = state.slips.findIndex(s => s.id === editingId);
+        if(idx !== -1) state.slips[idx] = slip;
+      }else{
+        state.slips.push(slip);
+      }
+      closeEntry();
+      renderAll();
+    }
+
+    function updateSlipStatus(id, status, result){
+      const slip = state.slips.find(s => s.id === id);
+      if(!slip) return;
+      slip.status = status;
+      slip.result = status === "DONE" ? result : "PENDING";
+      renderAll();
+    }
+
+    function deleteSlip(id){
+      state.slips = state.slips.filter(s => s.id !== id);
+      renderAll();
+    }
+
+    function exportTxt(){
+      const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        state
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type: "text/plain"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `chuyito-tracker-${todayISO()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function importTxt(file){
       const text = await file.text();
       const parsed = JSON.parse(text);
-
-      if(parsed.startingBankroll !== undefined) state.startingBankroll = num(parsed.startingBankroll);
-      state.autosave = parsed.autosave === "off" ? "off" : "on";
-      state.kpiView = parsed.kpiView === "creators" ? "creators" : "overall";
-      state.analystPrimary = parsed.analystPrimary || "";
-      state.analystCompare = parsed.analystCompare || "";
-
-      if(Array.isArray(parsed.slips)) state.slips = parsed.slips;
-
-      // normalize
-      state.slips = state.slips.map(s => {
-        const tailed = s.tailed === undefined ? num(s.stake) > 0 : !!s.tailed;
-        const stake = tailed ? num(s.stake) : null;
-        return {
-          id: s.id || genId(),
-          createdAt: s.createdAt || Date.now(),
-          date: s.date || "",
-          status: s.status === "DONE" ? "DONE" : "PENDING",
-          result: s.result || "",
-          app: s.app || "",
-          league: s.league || "",
-          oddsType: s.oddsType || "",
-          creator: resolveCreator(s.creator, s.analystId),
-          analystId: s.analystId || s.creator || "CHUY",
-          analystType: s.analystType || deriveAnalystType(s.analystId || s.creator || "CHUY"),
-          slipType: s.slipType || ((Array.isArray(s.players) ? s.players.length : 0) > 1 ? "Parlay" : "Straight"),
-          legsCount: num(s.legsCount) || ((Array.isArray(s.players) ? s.players.length : 0) || 1),
-          marketType: s.marketType || "",
-          confidence: (Number.isFinite(Number(s.confidence)) ? num(s.confidence) : null),
-          tailed,
-          stake,
-          mult: num(s.mult),
-          oddsDecimal: num(s.oddsDecimal) || num(s.mult),
-          paidMult: (s.paidMult === undefined ? "" : s.paidMult),
-          tag: s.tag || "",
-          tags: Array.isArray(s.tags) ? s.tags : parseTags(s.tags || s.tag || ""),
-          group: s.group || "",
-          slipId: s.slipId || "",
-          players: Array.isArray(s.players)
-            ? s.players.map(player => ({
-              name: player.name || "",
-              category: player.category || "",
-              line: player.line || "",
-              ou: player.ou || "",
-              final: player.final || "",
-              outcome: player.outcome || ""
-            }))
-            : ((s.notes && !s.players) ? [{name: s.notes, category: "", line: "", ou: "", final: "", outcome: ""}] : [])
+      if(parsed.state){
+        state = {
+          ...DEFAULT_STATE,
+          ...parsed.state,
+          slips: Array.isArray(parsed.state.slips) ? parsed.state.slips : []
         };
-      });
-
-      save();
-      render();
-    }catch{
-      alert("Import failed. Use a file exported from this tracker.");
-    }
-  }
-
-  // ---- Kebab menu logic ----
-  const menu = $("menu");
-  const menuTitle = $("menuTitle");
-  const menuPaid = $("menuPaid");
-  let activeSlipId = null;
-  let editingSlipId = null;
-
-  function closeMenu(){
-    menu.style.display = "none";
-    activeSlipId = null;
-  }
-
-  function openMenuForSlip(slipId, anchorRect){
-    const s = state.slips.find(x => x.id === slipId);
-    if(!s) return;
-
-    activeSlipId = slipId;
-    const stakeLabel = s.tailed ? fmtMoney(s.stake) : "Not tailed";
-    menuTitle.textContent = `Slip • ${s.date} • ${stakeLabel} @ ${num(s.mult).toFixed(2)}x`;
-    menuPaid.value = (s.paidMult === "" || s.paidMult === null || s.paidMult === undefined) ? "" : String(s.paidMult);
-
-    // Mobile: bottom sheet handled by CSS, just show
-    if(window.matchMedia("(max-width: 600px)").matches){
-      menu.style.display = "block";
-      return;
-    }
-
-    // Desktop positioning near kebab
-    const margin = 10;
-    const width = 330;
-    const heightGuess = 300;
-
-    let left = anchorRect.right + margin;
-    if(left + width > window.innerWidth - 10) left = anchorRect.left - width - margin;
-    left = Math.max(10, Math.min(left, window.innerWidth - width - 10));
-
-    let top = anchorRect.top;
-    if(top + heightGuess > window.innerHeight - 10) top = window.innerHeight - heightGuess - 10;
-    top = Math.max(10, top);
-
-    menu.style.left = left + "px";
-    menu.style.top = top + "px";
-    menu.style.display = "block";
-  }
-
-  function setSlipStatusResult(id, status, result){
-    const s = state.slips.find(x => x.id === id);
-    if(!s) return;
-    s.status = status;
-    s.result = status === "DONE" ? result : "";
-    save(); render();
-  }
-
-  function setPaidMult(id, val){
-    const s = state.slips.find(x => x.id === id);
-    if(!s) return;
-    s.paidMult = (val === "" ? "" : num(val));
-    save(); render();
-  }
-
-  function deleteSlip(id){
-    state.slips = state.slips.filter(s => s.id !== id);
-    if(expandedSlipId === id) expandedSlipId = null;
-    save(); render();
-  }
-
-  function setEditingBanner(isEditing){
-    const banner = $("editBanner");
-    const addBtn = $("addBtn");
-    if(banner) banner.hidden = !isEditing;
-    if(addBtn) addBtn.textContent = isEditing ? "Save Changes" : "Save Slip";
-  }
-
-  function resetBankroll(){
-    if(!confirm("Reset bankroll? This will clear tailed profit history and cannot be undone.")) return;
-    const nextValue = prompt("Enter new starting bankroll", String(state.startingBankroll || 0));
-    if(nextValue === null) return;
-    const parsed = Number(nextValue);
-    if(!Number.isFinite(parsed) || parsed < 0){
-      alert("Enter a valid starting bankroll amount.");
-      return;
-    }
-    state.startingBankroll = parsed;
-    state.slips = state.slips.map(s => (s.tailed ? {...s, tailed: false, stake: null} : s));
-    save();
-    render();
-  }
-
-  function applySlipToForm(slip){
-    const setValue = (id, value) => {
-      const el = $(id);
-      if(el) el.value = value;
-    };
-    setValue("date", slip.date || todayISO());
-    setValue("status", slip.status || "PENDING");
-    setValue("result", slip.result || "W");
-    setValue("app", slip.app || "");
-    setValue("league", slip.league || "");
-    setValue("oddsType", slip.oddsType || "");
-    setValue("stake", slip.stake || "");
-    setValue("mult", slip.mult || "");
-    setValue("oddsDecimal", slip.oddsDecimal || "");
-    setValue("paid", (slip.paidMult === "" ? "" : slip.paidMult));
-    setValue("tag", slip.tag || "");
-    setValue("tags", Array.isArray(slip.tags) ? slip.tags.join(", ") : (slip.tags || ""));
-    setValue("group", slip.group || "");
-    setValue("slipId", slip.slipId || "");
-    setValue("analystId", slip.analystId || DEFAULT_ANALYST_ID);
-    setValue("slipType", slip.slipType || "");
-    setValue("legsCount", slip.legsCount || "");
-    setValue("marketType", slip.marketType || "");
-    setValue("confidence", slip.confidence ?? "");
-    if($("tailed")) $("tailed").checked = !!slip.tailed;
-    syncAnalystType(slip.analystId || DEFAULT_ANALYST_ID);
-    $("result").disabled = ($("status").value !== "DONE");
-    syncTailedInput(!!slip.tailed);
-    renderPlayers(Array.isArray(slip.players) ? slip.players : []);
-  }
-
-  function startEditSlip(id){
-    const slip = state.slips.find(s => s.id === id);
-    if(!slip) return;
-    editingSlipId = id;
-    setEditingBanner(true);
-    applySlipToForm(slip);
-    enterSlipMode();
-  }
-
-  function cancelEdit(){
-    exitEnterMode();
-  }
-
-  // Events
-  $("addBtn").addEventListener("click", () => {
-    const existing = editingSlipId ? state.slips.find(s => s.id === editingSlipId) : null;
-    const slip = readSlipFromForm(false, existing);
-    if(!slip) return;
-    if(slip.status === "DONE" && !slip.result) return alert("Pick a result for finished slips.");
-    if(existing){
-      const idx = state.slips.findIndex(s => s.id === editingSlipId);
-      if(idx !== -1) state.slips[idx] = slip;
-      editingSlipId = null;
-      setEditingBanner(false);
-    }else{
-      state.slips.push(slip);
-    }
-    save();
-    pendingScrollId = slip.id;
-    setUiMode("VIEW");
-    clearForm();
-    render();
-  });
-
-  $("addPlayerBtn").addEventListener("click", () => {
-    const current = readPlayersDraft();
-    current.push({name:"", category:"", line:"", ou:""});
-    renderPlayers(current);
-  });
-
-  $("enterSlipBtn").addEventListener("click", enterSlipMode);
-  $("cancelEntryBtn").addEventListener("click", exitEnterMode);
-  $("cancelEditBtn").addEventListener("click", cancelEdit);
-
-  playersContainer().addEventListener("click", (e) => {
-    if(!e.target.closest(".remove-player")) return;
-    const rows = Array.from(playersContainer().querySelectorAll("[data-player-row]"));
-    const row = e.target.closest("[data-player-row]");
-    const index = rows.indexOf(row);
-    const current = readPlayersDraft();
-    current.splice(index, 1);
-    renderPlayers(current);
-  });
-
-  $("exportBtn").addEventListener("click", exportTxt);
-  $("exportCsvBtn").addEventListener("click", exportCsv);
-
-  $("importFile").addEventListener("change", async (e) => {
-    const file = e.target.files && e.target.files[0];
-    if(file) await importTxt(file);
-    e.target.value = "";
-  });
-
-  $("bankroll").addEventListener("input", (e) => {
-    if(e.target.disabled) return;
-    state.startingBankroll = num(e.target.value);
-    save(); render();
-  });
-
-  $("resetBankroll").addEventListener("click", resetBankroll);
-
-  $("autosave").addEventListener("change", (e) => {
-    state.autosave = e.target.value;
-    if(state.autosave === "on") save();
-  });
-
-  $("analystPrimary").addEventListener("change", (e) => {
-    state.analystPrimary = e.target.value;
-    save(); render();
-  });
-
-  $("analystCompare").addEventListener("change", (e) => {
-    state.analystCompare = e.target.value;
-    save(); render();
-  });
-
-  $("viewDate").addEventListener("change", render);
-  $("filterStatus").addEventListener("change", render);
-  $("filterDate").addEventListener("change", render);
-  $("filterGroup").addEventListener("change", render);
-  $("sortBy").addEventListener("change", render);
-  $("search").addEventListener("input", render);
-
-  const slipLog = $("slipLog");
-  if(slipLog){
-    slipLog.addEventListener("click", (e) => {
-      if(e.target.closest("[data-kebab]")) return;
-      const row = e.target.closest("[data-slip-row]");
-      if(!row) return;
-      const id = row.getAttribute("data-slip-row");
-      expandedSlipId = expandedSlipId === id ? null : id;
-      render();
-    });
-  }
-
-  $("status").addEventListener("change", () => {
-    const done = $("status").value === "DONE";
-    $("result").disabled = !done;
-  });
-
-  $("tailed").addEventListener("change", (e) => {
-    syncTailedInput(e.target.checked);
-  });
-
-  const creatorField = $("creator");
-  if(creatorField){
-    creatorField.addEventListener("change", () => {
-      const analystId = $("analystId");
-      if(analystId && !analystId.value.trim()){
-        analystId.value = creatorField.value;
-        syncAnalystType(analystId.value);
+      }else if(parsed.slips){
+        state = {
+          ...DEFAULT_STATE,
+          ...parsed,
+          slips: Array.isArray(parsed.slips) ? parsed.slips : []
+        };
       }
-    });
-  }
-
-  $("analystId").addEventListener("change", (e) => {
-    syncAnalystType(e.target.value);
-  });
-
-  // open kebab menu (works for table + cards)
-  document.addEventListener("click", (e) => {
-    const kb = e.target.closest("[data-kebab]");
-    if(kb){
-      const id = kb.getAttribute("data-kebab");
-      const rect = kb.getBoundingClientRect();
-      if(activeSlipId === id && menu.style.display === "block") closeMenu();
-      else openMenuForSlip(id, rect);
-      return;
+      renderAll();
     }
-    if(menu.style.display === "block" && !e.target.closest("#menu")) closeMenu();
-  });
 
-  document.addEventListener("keydown", (e) => {
-    if(e.key !== "Escape") return;
-    if(menu.style.display === "block") closeMenu();
-    if(uiMode === "ENTER_SLIP") exitEnterMode();
-  });
+    $("openEntry").addEventListener("click", () => openEntry());
+    $("cancelSlip").addEventListener("click", closeEntry);
+    $("saveSlip").addEventListener("click", saveSlip);
 
-  $("menuClose").addEventListener("click", closeMenu);
+    $("slipStatus").addEventListener("change", (e) => {
+      $("slipResult").disabled = e.target.value !== "DONE";
+    });
 
-  $("actPending").addEventListener("click", () => { if(activeSlipId){ setSlipStatusResult(activeSlipId,"PENDING",""); closeMenu(); }});
-  $("actWin").addEventListener("click", () => { if(activeSlipId){ setSlipStatusResult(activeSlipId,"DONE","W"); closeMenu(); }});
-  $("actLoss").addEventListener("click", () => { if(activeSlipId){ setSlipStatusResult(activeSlipId,"DONE","L"); closeMenu(); }});
-  $("actPush").addEventListener("click", () => { if(activeSlipId){ setSlipStatusResult(activeSlipId,"DONE","P"); closeMenu(); }});
-  $("actSavePaid").addEventListener("click", () => { if(activeSlipId){ setPaidMult(activeSlipId, menuPaid.value); closeMenu(); }});
-  $("actEdit").addEventListener("click", () => { if(activeSlipId){ startEditSlip(activeSlipId); closeMenu(); }});
-  $("actDelete").addEventListener("click", () => {
-    if(!activeSlipId) return;
-    if(!confirm("Delete this slip?")) return;
-    deleteSlip(activeSlipId);
-    closeMenu();
-  });
+    $("prevDay").addEventListener("click", () => {
+      const date = new Date(state.selectedDate);
+      date.setDate(date.getDate() - 1);
+      state.selectedDate = date.toISOString().slice(0,10);
+      $("dayPicker").value = state.selectedDate;
+      renderAll();
+    });
 
-  // Init
-  load();
-  setUiMode("VIEW");
-  $("date").value = todayISO();
-  $("viewDate").value = todayISO();
-  $("result").disabled = ($("status").value !== "DONE");
-  $("analystId").value = DEFAULT_ANALYST_ID;
-  syncAnalystType(DEFAULT_ANALYST_ID);
-  setEditingBanner(false);
-  renderPlayers([]);
-  if($("tailed")){
-    $("tailed").checked = true;
-    syncTailedInput(true);
-  }
-  render();
+    $("nextDay").addEventListener("click", () => {
+      const date = new Date(state.selectedDate);
+      date.setDate(date.getDate() + 1);
+      state.selectedDate = date.toISOString().slice(0,10);
+      $("dayPicker").value = state.selectedDate;
+      renderAll();
+    });
 
-})();
-</script>
+    $("todayBtn").addEventListener("click", () => {
+      state.selectedDate = todayISO();
+      $("dayPicker").value = state.selectedDate;
+      renderAll();
+    });
+
+    $("dayPicker").addEventListener("change", (e) => {
+      state.selectedDate = e.target.value || todayISO();
+      renderAll();
+    });
+
+    $("followerBank").addEventListener("input", updateBankrollSummary);
+    $("bankrollStart").addEventListener("input", updateBankrollSummary);
+
+    $("exportTxt").addEventListener("click", exportTxt);
+    $("importTxt").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if(file) await importTxt(file);
+      e.target.value = "";
+    });
+
+    $("clearAll").addEventListener("click", () => {
+      if(!confirm("This wipes all slips. Continue?")) return;
+      state = {...DEFAULT_STATE, selectedDate: state.selectedDate};
+      renderAll();
+    });
+
+    $("slipList").addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if(!btn) return;
+      const id = btn.dataset.id;
+      if(btn.dataset.action === "edit"){
+        const slip = state.slips.find(s => s.id === id);
+        openEntry(slip);
+      }
+      if(btn.dataset.action === "win") updateSlipStatus(id, "DONE", "WIN");
+      if(btn.dataset.action === "loss") updateSlipStatus(id, "DONE", "LOSS");
+      if(btn.dataset.action === "pending") updateSlipStatus(id, "PENDING", "PENDING");
+      if(btn.dataset.action === "delete") deleteSlip(id);
+    });
+
+    $("dayPicker").value = state.selectedDate;
+    $("followerBank").value = state.followerBank;
+    $("bankrollStart").value = state.bankrollStart;
+    updateDayLabel();
+    renderAll();
+  </script>
 </body>
 </html>
