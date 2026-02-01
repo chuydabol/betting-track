@@ -132,22 +132,71 @@
     }
     label{ font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
 
-    .grid{
+    .hero-bar{
       display: grid;
-      grid-template-columns: minmax(0, 2.3fr) minmax(0, 1.2fr);
+      grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
       gap: 18px;
-      margin-top: 18px;
+      padding: 22px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border-bottom: 1px solid var(--border);
+      margin-top: 10px;
     }
-    @media (max-width: 1100px){
-      .grid{ grid-template-columns: 1fr; }
+    @media (max-width: 980px){
+      .hero-bar{ grid-template-columns: 1fr 1fr; }
+      .hero-bar .hero-primary{ grid-column: 1 / -1; }
+    }
+    .hero-primary .hero-value{
+      font-size: 38px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+    }
+    .hero-stat{
+      display: grid;
+      gap: 6px;
+      align-content: center;
+    }
+    .hero-stat .hero-value{
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .hero-label{
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted-2);
     }
 
-    .card{
+    .main-layout{
+      display: grid;
+      grid-template-columns: minmax(0, 2.5fr) minmax(0, 1.1fr);
+      gap: 28px;
+      margin-top: 28px;
+    }
+    @media (max-width: 1100px){
+      .main-layout{ grid-template-columns: 1fr; }
+    }
+
+    .section-block{
+      padding: 22px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .section-block:last-child{ border-bottom: none; }
+
+    .primary{
+      display: grid;
+      gap: 26px;
+    }
+    .secondary{
+      display: grid;
+      gap: 24px;
+      align-content: start;
+    }
+
+    .panel{
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
       padding: 16px;
-      box-shadow: var(--shadow);
     }
 
     .section-title{
@@ -156,7 +205,7 @@
       justify-content: space-between;
       gap: 10px;
       flex-wrap: wrap;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
     .section-title h2{ margin: 0; font-size: 15px; }
     .hint{ color: var(--muted); font-size: 12px; }
@@ -176,28 +225,6 @@
       .col-3,.col-4,.col-6,.col-8{ grid-column: span 6; }
     }
 
-    .kpis{
-      display: grid;
-      gap: 12px;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    @media (max-width: 900px){
-      .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    .kpi{
-      padding: 12px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      background: var(--panel-strong);
-    }
-    .kpi .k{ font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: .12em; }
-    .kpi .v{ font-size: 18px; font-weight: 800; margin-top: 6px; }
-    .kpis .kpi:nth-child(2),
-    .kpis .kpi:nth-child(5),
-    .kpis .kpi:nth-child(7){
-      border-color: rgba(255,47,146,0.6);
-      box-shadow: 0 0 20px rgba(255,47,146,0.12);
-    }
     .pos{
       color: var(--good);
       text-shadow: 0 0 8px rgba(255,47,146,0.45);
@@ -205,7 +232,8 @@
     .neg{
       color: var(--bad);
       font-weight: 900;
-      font-size: 1.1em;
+      font-size: 1.05em;
+      opacity: 0.9;
     }
 
     .calendar{
@@ -219,23 +247,40 @@
 
     .slip-list{
       display: grid;
+      gap: 4px;
+    }
+    .slip-day{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .slip-day h3{
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.02em;
+    }
+    .slip-day .day-metrics{
+      display: flex;
+      flex-wrap: wrap;
       gap: 12px;
+      font-size: 12px;
+      color: var(--muted-2);
     }
     .slip-item{
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--panel-strong);
-      padding: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 16px 0;
       display: grid;
-      gap: 10px;
+      gap: 12px;
     }
     .slip-item:has(.pill.win){
-      border-color: rgba(255,47,146,0.7);
-      box-shadow: 0 0 16px rgba(255,47,146,0.25);
+      border-bottom-color: rgba(255,47,146,0.45);
     }
     .slip-item:has(.pill.loss){
-      background: #11111a;
-      border-color: rgba(176,24,90,0.8);
+      border-bottom-color: rgba(176,24,90,0.7);
+      color: var(--muted-2);
     }
     .slip-head{
       display: flex;
@@ -265,15 +310,15 @@
     .slip-meta{
       display: grid;
       gap: 8px;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       font-size: 12px;
       color: var(--muted);
     }
     .slip-meta strong{ color: var(--text); }
 
     .props{
-      border-left: 2px solid rgba(255,47,146,0.6);
-      padding-left: 10px;
+      border-left: 2px solid rgba(255,255,255,0.16);
+      padding-left: 12px;
       display: grid;
       gap: 6px;
       font-size: 12px;
@@ -283,9 +328,9 @@
 
     .chart-wrap{
       border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      padding: 12px;
-      background: var(--panel-strong);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 14px;
+      background: rgba(255,255,255,0.02);
     }
     canvas{ width: 100%; height: 220px; display: block; }
 
@@ -322,6 +367,19 @@
       font-size: 11px;
       color: var(--muted);
     }
+    .calendar-panel .calendar{
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .calendar-panel .calendar .btn{ min-height: 34px; }
+
+    .charts-section{
+      margin-top: 32px;
+      display: grid;
+      gap: 16px;
+    }
     .watermark{
       position: fixed;
       bottom: 18px;
@@ -355,12 +413,81 @@
   </div>
 
   <main class="wrap">
-    <div class="grid">
-      <div class="left-col">
-        <section class="card">
+    <section class="hero-bar" aria-label="Performance overview">
+      <div class="hero-primary hero-stat">
+        <div class="hero-value" id="overallUnits">0.00u</div>
+        <div class="hero-label">Overall Units</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-value" id="overallWinPct">0%</div>
+        <div class="hero-label">Win %</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-value" id="overallPropPct">0%</div>
+        <div class="hero-label">Prop Hit %</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-value" id="overallSlips">0</div>
+        <div class="hero-label">Total Slips</div>
+      </div>
+    </section>
+
+    <div class="main-layout">
+      <div class="primary">
+        <section class="section-block">
           <div class="section-title">
-            <h2>Daily Calendar</h2>
-            <span class="hint">Track every day with a calendar view.</span>
+            <div>
+              <h2>Recent Slips</h2>
+              <div class="muteline">Results for <span id="dayLabel"></span></div>
+            </div>
+            <span class="hint">Tap a slip to edit or update the result.</span>
+          </div>
+          <div class="slip-day">
+            <h3 id="recentDayHeader"></h3>
+            <div class="day-metrics">
+              <div>Net: <strong id="dayNetUnits">0.00u</strong></div>
+              <div>Record: <strong id="dayRecord">0-0</strong></div>
+              <div>Props: <strong id="dayProps">0 hit / 0 miss</strong></div>
+            </div>
+          </div>
+          <div class="slip-list" id="slipList"></div>
+        </section>
+
+        <section class="section-block" aria-label="Follower bankroll projection">
+          <div class="section-title">
+            <div>
+              <h2>If you followed CHUYITO230 with $X</h2>
+              <span class="hint">Projected follower performance using 5% units.</span>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6">
+              <label for="followerBank">Follower Bankroll ($)</label>
+              <input id="followerBank" type="number" min="0" step="1" value="200" />
+            </div>
+            <div class="col-6">
+              <label for="bankrollStart">Your Starting Bankroll ($)</label>
+              <input id="bankrollStart" type="number" min="0" step="1" value="1000" />
+            </div>
+            <div class="col-12">
+              <div class="info-box" id="bankrollSummary"></div>
+            </div>
+            <div class="col-12">
+              <div class="info-box">
+                <div><strong>Unit Rule:</strong> 1 unit = 5% of bankroll.</div>
+                <div><strong>Win math:</strong> units × multiplier = units won.</div>
+                <div><strong>Loss math:</strong> -units risked.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="secondary">
+        <section class="panel calendar-panel">
+          <div class="section-title">
+            <h2>Calendar</h2>
+            <span class="hint">Jump to a date.</span>
           </div>
           <div class="calendar">
             <button class="btn" id="prevDay">◀</button>
@@ -371,10 +498,10 @@
           <div class="muteline" id="daySummary"></div>
         </section>
 
-        <section class="card" id="entryCard" hidden>
+        <section class="panel" id="entryCard" hidden>
           <div class="section-title">
             <h2>Add / Edit Slip</h2>
-            <span class="hint">Units = 5% of bankroll. 1 unit @ 3x = +3 units if it hits.</span>
+            <span class="hint">Log the slip without changing unit math.</span>
           </div>
           <div class="row">
             <div class="col-3">
@@ -426,66 +553,23 @@
             <button class="btn" id="cancelSlip">Cancel</button>
           </div>
         </section>
-
-        <section class="card">
-          <div class="section-title">
-            <h2>Slips on <span id="dayLabel"></span></h2>
-            <span class="hint">Tap a slip to edit or update the result.</span>
-          </div>
-          <div class="slip-list" id="slipList"></div>
-        </section>
-      </div>
-
-      <div class="right-col">
-        <section class="card">
-          <div class="section-title">
-            <h2>Daily + Overall Stats</h2>
-            <span class="hint">Unit math with 5% bankroll sizing.</span>
-          </div>
-          <div class="kpis" id="kpiGrid"></div>
-          <div class="info-box" style="margin-top:12px;">
-            <div><strong>Unit Rule:</strong> 1 unit = 5% of bankroll.</div>
-            <div><strong>Win math:</strong> units × multiplier = units won.</div>
-            <div><strong>Loss math:</strong> -units risked.</div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="section-title">
-            <h2>Follower Bankroll Projection</h2>
-            <span class="hint">Show how followers would perform.</span>
-          </div>
-          <div class="row">
-            <div class="col-6">
-              <label for="followerBank">Follower Bankroll ($)</label>
-              <input id="followerBank" type="number" min="0" step="1" value="200" />
-            </div>
-            <div class="col-6">
-              <label for="bankrollStart">Your Starting Bankroll ($)</label>
-              <input id="bankrollStart" type="number" min="0" step="1" value="1000" />
-            </div>
-            <div class="col-12">
-              <div class="info-box" id="bankrollSummary"></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="section-title">
-            <h2>Charts</h2>
-            <span class="hint">Live charts update with each slip.</span>
-          </div>
-          <div class="chart-wrap">
-            <div class="muteline">Cumulative Units (all time)</div>
-            <canvas id="unitsChart" width="600" height="240"></canvas>
-          </div>
-          <div class="chart-wrap" style="margin-top:12px;">
-            <div class="muteline">Daily Units (last 14 days)</div>
-            <canvas id="dailyChart" width="600" height="240"></canvas>
-          </div>
-        </section>
-      </div>
+      </aside>
     </div>
+
+    <section class="charts-section">
+      <div class="section-title">
+        <h2>Charts</h2>
+        <span class="hint">Quiet confirmation of performance over time.</span>
+      </div>
+      <div class="chart-wrap">
+        <div class="muteline">Units over time</div>
+        <canvas id="unitsChart" width="600" height="240"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <div class="muteline">Daily Units (last 14 days)</div>
+        <canvas id="dailyChart" width="600" height="240"></canvas>
+      </div>
+    </section>
   </main>
   <div class="watermark">CHUYITO230</div>
 
@@ -555,7 +639,9 @@
 
     function updateDayLabel(){
       const date = new Date(state.selectedDate);
-      $("dayLabel").textContent = date.toLocaleDateString("en-US", {weekday: "long", month: "short", day: "numeric"});
+      const label = date.toLocaleDateString("en-US", {weekday: "long", month: "short", day: "numeric"});
+      $("dayLabel").textContent = label;
+      $("recentDayHeader").textContent = label;
     }
 
     function slipsForDate(date){
@@ -577,30 +663,25 @@
       const daySlips = slipsForDate(state.selectedDate);
       const daySummary = summaryFor(daySlips);
       const overallSummary = summaryFor(state.slips);
+      const totalDecisions = overallSummary.wins + overallSummary.losses;
+      const totalProps = overallSummary.propHits + overallSummary.propMisses;
+      const winPct = totalDecisions ? (overallSummary.wins / totalDecisions) * 100 : 0;
+      const propPct = totalProps ? (overallSummary.propHits / totalProps) * 100 : 0;
 
-      const kpis = [
-        { label: "Today Units", value: daySummary.totalUnits, type: "units" },
-        { label: "Overall Units", value: overallSummary.totalUnits, type: "units" },
-        { label: "Today Slips", value: daySlips.length, type: "count" },
-        { label: "Pending", value: daySummary.pending, type: "count" },
-        { label: "Wins", value: overallSummary.wins, type: "count" },
-        { label: "Losses", value: overallSummary.losses, type: "count" },
-        { label: "Prop Hits", value: overallSummary.propHits, type: "count" },
-        { label: "Prop Misses", value: overallSummary.propMisses, type: "count" }
-      ];
+      const overallUnitsEl = $("overallUnits");
+      overallUnitsEl.textContent = formatUnits(overallSummary.totalUnits);
+      overallUnitsEl.className = `hero-value ${overallSummary.totalUnits >= 0 ? "pos" : "neg"}`;
 
-      const grid = $("kpiGrid");
-      grid.innerHTML = "";
-      kpis.forEach(kpi => {
-        const div = document.createElement("div");
-        div.className = "kpi";
-        const value = kpi.type === "units" ? formatUnits(kpi.value) : kpi.value;
-        const cls = kpi.type === "units" ? (kpi.value >= 0 ? "pos" : "neg") : "";
-        div.innerHTML = `<div class="k">${kpi.label}</div><div class="v ${cls}">${value}</div>`;
-        grid.appendChild(div);
-      });
+      $("overallWinPct").textContent = `${winPct.toFixed(1)}%`;
+      $("overallPropPct").textContent = `${propPct.toFixed(1)}%`;
+      $("overallSlips").textContent = state.slips.length;
 
-      $("daySummary").textContent = `Today: ${daySlips.length} slips • ${formatUnits(daySummary.totalUnits)} units`;
+      const dayNetEl = $("dayNetUnits");
+      dayNetEl.textContent = formatUnits(daySummary.totalUnits);
+      dayNetEl.className = daySummary.totalUnits >= 0 ? "pos" : "neg";
+      $("dayRecord").textContent = `${daySummary.wins}-${daySummary.losses}`;
+      $("dayProps").textContent = `${daySummary.propHits} hit / ${daySummary.propMisses} miss`;
+      $("daySummary").textContent = `${daySlips.length} slips • ${formatUnits(daySummary.totalUnits)} units`;
     }
 
     function renderSlipList(){
@@ -625,10 +706,10 @@
             </span>
           </div>
           <div class="slip-meta">
-            <div>Units: <strong>${formatUnits(slip.units)}</strong></div>
+            <div>Units Risked: <strong>${formatUnits(slip.units)}</strong></div>
             <div>Multiplier: <strong>${slip.multiplier}x</strong></div>
+            <div>Result: <strong>${slip.status === "PENDING" ? "Pending" : slip.result}</strong></div>
             <div>Units P/L: <strong class="${unitsProfit(slip) >= 0 ? "pos" : "neg"}">${formatUnits(unitsProfit(slip))}</strong></div>
-            <div>Props: <strong>${(slip.props || []).length}</strong></div>
           </div>
           ${slip.props && slip.props.length ? `
             <div class="props">
